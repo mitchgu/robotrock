@@ -1,0 +1,1 @@
+g++ test_opencv.cpp -o test_opencv `pkg-config opencv --cflags --libs` -lpthread
