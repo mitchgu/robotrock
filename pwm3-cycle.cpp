@@ -52,12 +52,13 @@ int main ()
     pwm->enable(true);
 
     float value = 0.0f;
+    float change = 0.01f;
     while (running == 0) {
-        value = value + 0.01f;
+        value = value + change;
         pwm->write(value);
         usleep(50000);
-        if (value >= 1.0f) {
-            value = 0.0f;
+        if (value >= 1.0f || value <=0.0f) {
+            change = -change;
         }
     }
     delete pwm;
