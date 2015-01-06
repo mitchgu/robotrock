@@ -7,3 +7,4 @@ Team members:
 Alicia Weng
 Joe Huang
 Mitchell Gu
+Akshat Bubna
