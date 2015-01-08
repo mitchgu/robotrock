@@ -15,15 +15,14 @@ void hsv(Mat& inFrame, Mat& outFrame)
 {
 	cvtColor(inFrame, outFrame, CV_BGR2HSV);
 }
-void maxFilter(Mat& frame, int ind) 
+void maxFilter(Mat& frame, int ind, float mult=1.3)
 {
-	Vec3b& cur;
 	REP(i,frame.rows)
 	{
 		REP(j,frame.cols)
 		{
-			cur=frame.at(i,j);
-			if(cur[ind]>cur[(ind+1)%3]&&cur[ind]>cur[(ind+2)%3])  cur[ind]=255;
+			Vec3b& cur =frame.at<Vec3b>(i,j);
+			if(cur[ind]>mult*cur[(ind+1)%3]&&cur[ind]>mult*cur[(ind+2)%3])  cur[ind]=255;
 			else cur[ind]=0;
 			cur[(ind+1)%3]=0;
 			cur[(ind+2)%3]=0;
@@ -77,8 +76,8 @@ int main()
 		recVid << frame; //recorded raw video
 
 		Mat out;
-		maxFilter(frame,out);
-		outVid<<out; //recorded processed video
+		maxFilter(frame,1);
+		outVid<<frame; //recorded processed video
 
 		struct timespec tim, tim2;
 		tim.tv_sec = 0;
