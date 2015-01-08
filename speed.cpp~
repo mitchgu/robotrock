@@ -21,7 +21,6 @@ int main() {
 	mraa::Pwm rightPwm = mraa::Pwm(5);
 	mraa::Gpio leftDir=mraa::Gpio(11);
 	mraa::Gpio rightDir=mraa::Gpio(12);
-
 	rightDir.dir(mraa::DIR_OUT);
 	leftDir.dir(mraa::DIR_OUT);
 	rightPwm.enable(true);
