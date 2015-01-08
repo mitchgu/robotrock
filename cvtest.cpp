@@ -1,11 +1,13 @@
 #include <cassert>
+#include <utility>
 #include <vector>
 #include <iostream>
 #include <time.h>
+#include <string>
 #include "opencv2/opencv.hpp"
 
 #define REP(i,n) for(int i=0;i<n;i++)
-#define mp make_pair
+#define mp std::make_pair
 #define pb push_back
 
 using namespace cv;
@@ -32,17 +34,23 @@ void maxFilter(Mat& frame, int ind, float mult=1.3)
 		}
 	}
 }
-int** comp; std::vector<pair<double,double> > cents; int currentComp;
+int** comp; std::vector<std::pair<double,double> > cents; int currentComp;
 int dimR, dimC, toti, totj;
-int[] dx={1,-1,0,0};
-int[] dy={0,0,1,-1};
+int dx[]={1,-1,0,0};
+int dy[]={0,0,1,-1};
 bool check(int i, int j, Mat &inFrame, int ind)
 {
 	if(i<0||i>=dimR) return false;
 	if(j<0||j>=dimC) return false;
-	if(comp[i][j]==-1) return true;	
 	if(inFrame.at<Vec3b>(i,j)[ind]==0) return false;
+	if(comp[i][j]==-1) return true;	
 	return false;
+}
+bool checkin(int i, int j)
+{
+	if(i<0||i>=dimR) return false;
+	if(j<0||j>=dimC) return false;
+	return true;
 }
 int dfs(int i, int j, Mat &inFrame, int ind)
 {
@@ -63,24 +71,31 @@ void fill(Mat &inFrame, int ind)
 	cents.resize(0);
 	currentComp=0;
 	dimR=inFrame.rows, dimC=inFrame.cols;
-	REP(i,inFrame.rows) comp[i]=new int[inFrame.cols];
-	memset(comp,-1,sizeof(comp));
+	std::cout<<dimR*dimC<<std::endl;
+	REP(i,inFrame.rows)
+	{
+		comp[i]=new int[inFrame.cols];
+		REP(j,inFrame.cols) comp[i][j]=-1;
+	}
 	REP(i,inFrame.rows) REP(j,inFrame.cols) 
 	{
 		if(!check(i,j,inFrame,ind)) continue;
-		if(c=-1) continue;
 		toti=0,totj=0;
-		int ar=dfs(i,j,inFrame);
+		int ar=dfs(i,j,inFrame,ind);
 		double ci=toti/((double)ar);
 		double cj=totj/((double)ar);
 		if(ar>=1000) 
 		{
 			std::cout<<ci<<" "<<cj<<" "<<ar<<std::endl;
 			cents.pb(mp(ci,cj));
-			REP(x,8) REP(y,8) 
+			REP(x,5) REP(y,5) 
 			{
 				int ni=int(ci)+x,nj=int(cj)+y;
-				if(check(ni,nj,inFrame,ind)) inFrame.at<Vec3b>(ni,nj)[ind]=0,inFrame.at<Vec3b>(ni,nj)[(ind+2)%2]=255;
+				if(checkin(ni,nj))
+				{
+					//std::cout<<ni<<"" <<nj<<std::endl;
+					inFrame.at<Vec3b>(ni,nj)[ind]=0,inFrame.at<Vec3b>(ni,nj)[(ind+2)%3]=255;
+				}
 			}
 		}
 		currentComp++;
@@ -133,8 +148,8 @@ int main()
 		recVid << frame; //recorded raw video
 
 		Mat out;
-		maxFilter(frame,1);
-		fill(frame,1);
+		maxFilter(frame,2);
+		fill(frame,2);
 		outVid<<frame; //recorded processed video
 
 		struct timespec tim, tim2;
