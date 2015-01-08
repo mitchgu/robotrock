@@ -1,6 +1,6 @@
 #include <cassert>
 #include <iostream>
-
+#include <mraa.hpp>
 /*
 read the instant value of the IR sensor
 input: 
@@ -29,7 +29,7 @@ double averageRead(mraa::Aio sensor)
 	}
 	return sum/10.0;
 }
-double get distance()
+double getDistance()
 {}
 
 int main()
