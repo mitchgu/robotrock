@@ -1,6 +1,7 @@
 #include <cassert>
 #include <iostream>
 #include <mraa.hpp>
+#include <algorithm>
 /*
 read the instant value of the IR sensor
 input: 
@@ -19,15 +20,18 @@ mraa::Aio sensorpin
 */
 double averageRead(mraa::Aio sensor)
 {
-	int count = 10;
+	int count = 0;
 	double sum = 0;
-	while (count > 0)
+	int* sample = new int[10];
+	while (count < 10)
 	{
 		sum = sum + sensor.read();
-		count--;
+		sample[count] = sensor.read();
+		count++;
 		usleep(100);
 	}
-	return sum/10.0;
+	std::sort(sample,sample+10);
+	return (sample[4]+sample[5])/2;
 }
 double getDistance()
 {}
