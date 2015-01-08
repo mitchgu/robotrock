@@ -1,9 +1,12 @@
 #include <cassert>
+#include <vector>
 #include <iostream>
 #include <time.h>
 #include "opencv2/opencv.hpp"
 
 #define REP(i,n) for(int i=0;i<n;i++)
+#define mp make_pair
+#define pb push_back
 
 using namespace cv;
 
@@ -27,6 +30,60 @@ void maxFilter(Mat& frame, int ind, float mult=1.3)
 			cur[(ind+1)%3]=0;
 			cur[(ind+2)%3]=0;
 		}
+	}
+}
+int** comp; std::vector<pair<double,double> > cents; int currentComp;
+int dimR, dimC, toti, totj;
+int[] dx={1,-1,0,0};
+int[] dy={0,0,1,-1};
+bool check(int i, int j, Mat &inFrame, int ind)
+{
+	if(i<0||i>=dimR) return false;
+	if(j<0||j>=dimC) return false;
+	if(comp[i][j]==-1) return true;	
+	if(inFrame.at<Vec3b>(i,j)[ind]==0) return false;
+	return false;
+}
+int dfs(int i, int j, Mat &inFrame, int ind)
+{
+	int ar=1;
+	toti+=i, totj+=j;
+	comp[i][j]=currentComp;
+	REP(k,4)
+	{
+		int ni=i+dx[k],nj=j+dy[k];
+		if(!check(ni,nj,inFrame,ind)) continue;
+		ar+=dfs(ni,nj,inFrame,ind);
+	}
+	return ar;
+}
+void fill(Mat &inFrame, int ind)
+{
+	comp=new int*[inFrame.rows];
+	cents.resize(0);
+	currentComp=0;
+	dimR=inFrame.rows, dimC=inFrame.cols;
+	REP(i,inFrame.rows) comp[i]=new int[inFrame.cols];
+	memset(comp,-1,sizeof(comp));
+	REP(i,inFrame.rows) REP(j,inFrame.cols) 
+	{
+		if(!check(i,j,inFrame,ind)) continue;
+		if(c=-1) continue;
+		toti=0,totj=0;
+		int ar=dfs(i,j,inFrame);
+		double ci=toti/((double)ar);
+		double cj=totj/((double)ar);
+		if(ar>=1000) 
+		{
+			std::cout<<ci<<" "<<cj<<" "<<ar<<std::endl;
+			cents.pb(mp(ci,cj));
+			REP(x,8) REP(y,8) 
+			{
+				int ni=int(ci)+x,nj=int(cj)+y;
+				if(check(ni,nj,inFrame,ind)) inFrame.at<Vec3b>(ni,nj)[ind]=0,inFrame.at<Vec3b>(ni,nj)[(ind+2)%2]=255;
+			}
+		}
+		currentComp++;
 	}
 }
 Mat brigChange(Mat frame)
@@ -77,6 +134,7 @@ int main()
 
 		Mat out;
 		maxFilter(frame,1);
+		fill(frame,1);
 		outVid<<frame; //recorded processed video
 
 		struct timespec tim, tim2;
