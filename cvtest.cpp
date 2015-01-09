@@ -1,4 +1,5 @@
 #include <cassert>
+#include <math.h>
 #include <utility>
 #include <vector>
 #include <iostream>
@@ -12,6 +13,20 @@
 
 using namespace cv;
 
+const double distA=6.8327;
+const double distB=0.0062;
+const int distR=240;
+const int distC=320;
+std::pair<double, double> getDist(int i, int j)
+{
+	i=distR-i;
+	j=j-(distC/2);
+	double dist=distA*std::exp(distB*i);
+	double angle=std::atan2(j,i);
+	dist=dist/std::cos(angle);
+	angle=angle*180/3.14159;
+	return mp(dist,angle);
+}
 void downSize(Mat& inFrame, Mat& outFrame) 
 {
 	resize(inFrame, outFrame, Size(), 0.5, 0.5, INTER_NEAREST);
@@ -20,14 +35,15 @@ void hsv(Mat& inFrame, Mat& outFrame)
 {
 	cvtColor(inFrame, outFrame, CV_BGR2HSV);
 }
-void maxFilter(Mat& frame, int ind, float mult=1.3)
+void maxFilter(Mat& frame, int ind, double multA=1.22, double multB=1.5)
 {
+	if(ind!=0) multA=multB=1.3;
 	REP(i,frame.rows)
 	{
 		REP(j,frame.cols)
 		{
 			Vec3b& cur =frame.at<Vec3b>(i,j);
-			if(cur[ind]>mult*cur[(ind+1)%3]&&cur[ind]>mult*cur[(ind+2)%3])  cur[ind]=255;
+			if(cur[ind]>60&&cur[ind]>multA*cur[(ind+1)%3]&&cur[ind]>multB*cur[(ind+2)%3])  cur[ind]=255;
 			else cur[ind]=0;
 			cur[(ind+1)%3]=0;
 			cur[(ind+2)%3]=0;
@@ -71,7 +87,7 @@ void fill(Mat &inFrame, int ind)
 	cents.resize(0);
 	currentComp=0;
 	dimR=inFrame.rows, dimC=inFrame.cols;
-	std::cout<<dimR*dimC<<std::endl;
+	std::cout<<dimR<<" "<<dimC<<std::endl;
 	REP(i,inFrame.rows)
 	{
 		comp[i]=new int[inFrame.cols];
@@ -82,15 +98,17 @@ void fill(Mat &inFrame, int ind)
 		if(!check(i,j,inFrame,ind)) continue;
 		toti=0,totj=0;
 		int ar=dfs(i,j,inFrame,ind);
-		double ci=toti/((double)ar);
-		double cj=totj/((double)ar);
+		int ci=toti/((double)ar);
+		int cj=totj/((double)ar);
 		if(ar>=1000) 
 		{
-			std::cout<<ci<<" "<<cj<<" "<<ar<<std::endl;
+			std::cout<<"("<<ci<<", "<<cj<<"), area: "<<ar<<std::endl;
 			cents.pb(mp(ci,cj));
+			std::pair<double,double> dist=getDist(ci,cj);
+			std::cout<<"This point is "<<dist.first<<" inches away at angle "<<dist.second<<" to the normal \n";
 			REP(x,5) REP(y,5) 
 			{
-				int ni=int(ci)+x,nj=int(cj)+y;
+				int ni=ci+x,nj=cj+y;
 				if(checkin(ni,nj))
 				{
 					//std::cout<<ni<<"" <<nj<<std::endl;

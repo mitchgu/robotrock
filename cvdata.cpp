@@ -58,5 +58,23 @@ int main(int argc, char** argv)
 {
 	char* fileName=argv[1];
 	Mat in=imread(fileName,1);
+	int rows=in.rows,cols=in.cols;
+	REP(k,3)
+	{
+		int tot=0,num=0, wht=0;
+		REP(i,rows) REP(j,cols)
+		{
+			Vec3b& cur=in.at<Vec3b>(i,j);
+			if(cur[0]==255&&cur[1]==255&&cur[2]==255)
+			{
+				wht++;
+				continue;
+			}
+			tot+=cur[k];
+			num++;
+		}
+		double res=tot/((double)num);
+		std::cout<<k<<" "<<res<<" "<<wht<<std::endl;
+	}
 	return 0;
 }
