@@ -10,7 +10,7 @@ mraa::Aio sesorpin
 double instantRead(mraa::Aio& sensor)
 {
 	double result = sensor.read();
-	return result;
+	return result*5/1024;
 }
 
 /*
@@ -29,11 +29,11 @@ double averageRead(mraa::Aio& sensor)
 		usleep(100);
 	}
 	std::sort(sample,sample+10);
-	return (sample[4]+sample[5])/2;
+	return ((sample[4]+sample[5])/2)*5.0/1024;
 }
 double getDistance(mraa::Aio &sensor)
 {
-	double voltage = averageRead(sensor)/1000;
+	double voltage = averageRead(sensor);
 	double distance[29] = {1,1.5,2,2.5,3,3.5,4,4.5,5,5.5,6,6.5,7,7.5,8,8.5,9,9.5,10,
 	11,12,13,14,15,16,17,18,19,20};
 	double svoltage[29] = {3.112,2.718,2.191,1.777,1.555,1.413,1.215,1.118,1.007,0.927,0.839,0.77,
@@ -56,7 +56,7 @@ double getDistance(mraa::Aio &sensor)
 
 int main()
 {
-	mraa::Aio sensor = mraa::Aio(0);
+	mraa::Aio sensor = mraa::Aio(2);	
 	for(int i=0; i<15;i++)
 	{
 		double distance = getDistance(sensor);
