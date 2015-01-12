@@ -18,6 +18,7 @@ class Gyroscope
 	struct timeval tv;
 	bool init;
 public:
+//set chipselect pin
 	Gyroscope(int gyrp)
 	{
 		chipSelect=new mraa::Gpio(gyrp);    //setting pin
@@ -79,6 +80,7 @@ return believed angle
 };
 
 
+
 class Location {
 	float x;
 	float y;
@@ -134,15 +136,15 @@ class Odometry {
 reset odometry
 */
 
-	void set(Location _location) 
+	void set(Location* _location) 
 	{
 		location=_location;
 		gettimeofday(&tv,NULL);
 	}
 /*
-run
+run pointer=&object;
 */
-	Location run()
+	Location* run()
 	{
 		if(init) 
 		{
@@ -171,10 +173,8 @@ run
 		}
 		return location;
 	}
-
-
 }
-
+/*
 class State {
 	Location* location;
 	Location* target;
@@ -195,43 +195,29 @@ public:
 		ir4 = new IR(IR4p);
 		setmap = map;;
 	}
-/*
-reset placcement
-*/
+
 	void reset (Location _location) {
 		odo->set(_location);
 		gyr->set(_location->theta());
 	}
-/*
-set target
-*/
+
 	void setTarget (Location _target) {
 		target = _target;
 	}
-/*
-keep track on your current location
-*/
+
 	void track () {
 
 	}
-/*
-planwork input use the current location to check if we are going into the wall
-return a boolean
-*/
+
 	bool planwork () {
 
 	}
 
-/*
-plan a new way to go
-return a stack of location that you can follow to approach the target(all go straight line)
-*/
+
 	Location[] plan() {
 
 	}
-/*
-approach the target
-*/
+
 	void approach () {
 		Location[] Myplan = plan();
 		while ()
@@ -239,7 +225,7 @@ approach the target
 
 	}
 }
-
+*/
 class Motor
 {
 	mraa::Gpio* dir;
@@ -263,7 +249,7 @@ public:
 	void forward()
 	{
 		if(side) dir->write(1);
-		else dir->write(1);
+		else dir->write(0);
 	}
 	void backward()
 	{
@@ -323,10 +309,10 @@ void sig_handler(int signo)
 int main()
 {
 	signal(SIGINT, sig_handler);
-	Motor left(8,3,false),right(12,5,true);
+	Motor left(12,5,4,false),right(8,3,2,true);
 	Gyroscope gyr(10);
 
-	const float target=0, K=0.003, base=0.1;
+	const float target=0, K=0.003, base=0.05;
 
 	left.forward();
 	right.forward();
@@ -337,6 +323,7 @@ int main()
 	
 	while(running) 
 	{
+		/*
 		float angle=gyr.run();
 		float diff=(angle-target)*K;
 		std::cout<<angle<<" "<<diff<<std::endl;
@@ -345,6 +332,10 @@ int main()
 		if(diff>0) left.setSpeed(base+diff);
 		else right.setSpeed(base-diff);
 		sleep(0.01);
+		*/
+		left.setSpeed(base);
+		float realspeed = left.rps();
+		std::cout<<realspeed<<" "<<diff<<std::endl;
 	}
 
 	left.setSpeed(0);
