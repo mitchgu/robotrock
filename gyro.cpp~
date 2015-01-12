@@ -17,9 +17,9 @@ class Gyroscope
 	struct timeval tv;
 	bool init;
 public:
-	Gyroscope(int gpin)
+	Gyroscope()
 	{
-		chipSelect=new mraa::Gpio(gpin);
+		chipSelect=new mraa::Gpio(10);
 		chipSelect->dir(mraa::DIR_OUT);
 		chipSelect->write(1);
 	 	spi = new mraa::Spi(0);

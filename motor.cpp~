@@ -77,7 +77,7 @@ public:
 		ms = msl - ms;
 		std::cout<<ms<<" "<<std::endl;
 		float msf = (float)ms;
-		return 5.0072*((1/((msf/5000)*2))/1920)-0.0157;
+		return (1/((msf/5000)*2))/1920;
 	}
 };
 

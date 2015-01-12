@@ -6,7 +6,6 @@
 #include <mraa.hpp>
 #include <signal.h>
 #include <math.h>
-#include "data.cpp"
 
 
 class Motor
@@ -31,13 +30,13 @@ public:
 	}	
 	void forward()
 	{
-		if(side) dir->write(0);
-		else dir->write(1);
+		if(side) dir->write(1);
+		else dir->write(0);
 	}
 	void backward()
 	{
-		if(side) dir->write(1);
-		else dir->write(0);
+		if(side) dir->write(0);
+		else dir->write(1);
 	}
 	void setSpeed(float set)
 	{
@@ -55,30 +54,75 @@ public:
 		int reading = hall->read();
 		while(reading == hall->read())
 		{
-			usleep(10);
+			usleep(100);
 		}
 		gettimeofday(&tv,NULL);
 		unsigned long long ms = (unsigned long long)(tv.tv_sec)*1000 +
 						(unsigned long long)(tv.tv_usec) / 1000;
 		int count=0;
 		reading = hall->read();
-		while(count<=5) 
+		while(count<=10) 
 		{
 			if (reading != hall->read())
 			{
 				count++;
 				reading = hall->read();
 			}
-			usleep(10);
+			usleep(100);
 		}
 		gettimeofday(&tv,NULL);
 		unsigned long long msl = (unsigned long long)(tv.tv_sec)*1000 +
 						(unsigned long long)(tv.tv_usec) / 1000;
 		ms = msl - ms;
-		std::cout<<ms<<" "<<std::endl;
 		float msf = (float)ms;
-		return 5.0072*((1/((msf/5000)*2))/1920)-0.0157;
+		return (1/((msf/10000)*2))/1920;
 	}
 };
 
 
+int running=1;
+
+void sig_handler(int signo)
+{
+    if (signo == SIGINT) {
+        printf("closing PWM nicely\n");
+        running = 0;
+    }
+};
+
+int main()
+{
+	signal(SIGINT, sig_handler);
+	Motor left(12,5,4,false),right(8,3,2,true);
+	Gyroscope gyr(10);
+
+	const float target=0, K=0.003, base=0.1;
+
+	left.forward();
+	right.forward();
+
+	left.setSpeed(base);
+	right.setSpeed(base);
+
+	
+	while(running) 
+	{
+		/*
+		float angle=gyr.run();
+		float diff=(angle-target)*K;
+		std::cout<<angle<<" "<<diff<<std::endl;
+		left.setSpeed(base);
+		right.setSpeed(base);
+		if(diff>0) left.setSpeed(base+diff);
+		else right.setSpeed(base-diff);
+		sleep(0.01);
+		*/
+		float realspeed = left.rps();
+		std::cout<<realspeed<<" "<<std::endl;
+	}
+
+	left.setSpeed(0);
+	right.setSpeed(0);
+    	sleep(1);
+    	return 0;
+}
