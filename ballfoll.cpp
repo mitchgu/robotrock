@@ -10,65 +10,8 @@
 #include <mraa.hpp>
 #include <signal.h>
 
-class Gyroscope 
-{
-	mraa::Gpio *chipSelect;
-	mraa::Spi* spi;
-	char rxBuf[2];
-	char writeBuf[4];
-	float total;
-	struct timeval tv;
-	bool init;
-public:
-	Gyroscope()
-	{
-		chipSelect=new mraa::Gpio(10);
-		chipSelect->dir(mraa::DIR_OUT);
-		chipSelect->write(1);
-	 	spi = new mraa::Spi(0);
-		spi->bitPerWord(32);
-		unsigned int sensorRead = 0x20000000;
-		writeBuf[0] = sensorRead & 0xff;
-		writeBuf[1] = (sensorRead >> 8) & 0xff;
-		writeBuf[2] = (sensorRead >> 16) & 0xff;
-		writeBuf[3] = (sensorRead >> 24) & 0xff;
-		total=0, init=false;
-	}
-	void reset() {total=0; }
-	float run()
-	{
-		chipSelect->write(0);
-		char* recv = spi->write(writeBuf, 4);
-		chipSelect->write(1);
-		if (recv != NULL)
-		{
-			unsigned int recvVal = ((uint8_t) recv[3] & 0xFF);
-			recvVal = (recvVal << 8) | ((uint8_t)recv[2] & 0xFF);
-			recvVal = (recvVal << 8) | ((uint8_t)recv[1] & 0xFF);
-			recvVal = (recvVal << 8) | ((uint8_t)recv[0] & 0xFF);
-			//printf("Received: 0x%.8x, ", recvVal);
-			// Sensor reading
-			short reading = (recvVal >> 10) & 0xffff;
-			if (init) {
-				unsigned long long ms = (unsigned long long)(tv.tv_sec)*1000 +
-					(unsigned long long)(tv.tv_usec) / 1000;
-				gettimeofday(&tv, NULL);
-				ms -= (unsigned long long)(tv.tv_sec)*1000 +
-					(unsigned long long)(tv.tv_usec) / 1000;
-				int msi = (int)ms;
-				float msf = (float)msi;
-				float rf = (float)reading;
-				total += -0.001 * msf * (rf / 80.0);
-				printf("Total: %f, Reading: %f, Time: %f\n", total, rf, -msf);
-			}
-		else {
-			init=true;
-			gettimeofday(&tv, NULL);
-		}
-		}
-		return total;
-	}
-};
+#include "gyro.cpp"
+
 class Motor
 {
 	mraa::Gpio* dir;
@@ -89,12 +32,12 @@ public:
 	void forward()
 	{
 		if(side) dir->write(1);
-		else dir->write(1);
+		else dir->write(0);
 	}
 	void backward()
 	{
 		if(side) dir->write(0);
-		else dir->write(0);
+		else dir->write(1);
 	}
 	void setSpeed(float set)
 	{
@@ -256,12 +199,10 @@ int main()
 
 	const float K=0.001, base=0.1;
 	float target;
-	int d1,d2,neg;
-	std::cin>>d1>>d2>>neg;
-	if(d1) left.backward();
-	else left.forward();
-	if(d2) right.backward();
-	else right.forward();
+	int neg;
+	std::cin>>neg;
+	left.forward();
+	right.forward();
 
 	left.setSpeed(base);
 	right.setSpeed(base);
