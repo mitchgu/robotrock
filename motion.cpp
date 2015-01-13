@@ -6,46 +6,60 @@
 #include <mraa.hpp>
 #include <signal.h>
 #include <math.h>
-#include "motor.cpp"
-#include "data.cpp"
 #include "gyro.cpp"
 #include "odometry.cpp"
 
 
 class Motion
 {
-	Motor* l,r;
+	Motor *l,*r;
 	Gyroscope* gyr;
 	Odometry* odo;
 	Location* current;
-	float currentangle;
+	double currentAngle;
+	double targetAngle,moveDistance;
+	const double Kp=0.001, Ki=0, Kd=0;
+	bool rotating;
 public:
-	Motion( Motor* _l, Motor* _r, Gyroscope* _gyr, Location* _start) {
+	Motion( Motor* _l, Motor* _r, Gyroscope* _gyr, Location* _start) 
+	{
 		l = _l;
 		r = _r;
 		gyr = _gyr;
 		float n = gyr->run();
 		odo = new Odometry(_l, _r, _start->x(),_start->y(),_start->theta());
-		current = _start;
-		angle = _start->theta();
+		current= _start;
+		currentAngle = _start->theta();
+		rotating=false;
+		angleError=moveError=0;
+	}
+	void run()
+	{
 	}
 	// rotate clockwise means angle > 0
-	void rotate( float angle) {
-		float currentangle = gyr->run();
-		float targetangle = currentangle + angle;
-		l->forward();
-		r->backward();
+	void rotate( float angle) 
+	{
+		currentAngle = gyr->run();
+		targetAngle = currentangle + angle;
+		if(angle>0)
+		{
+			l->forward();
+			r->backward();
+		}
 		while (!((targetangle - currentangle) >-0.001 && (targetangle - currentangle) <0.001)) {
 			currentangle = gyr->run();
-			float speed = targetangle-currentangle;
+			float speed = (targetangle-currentangle)*5;
 			l->setSpeed(speed);
 			r->setSpeed(speed);
 			current = odo->run();
 		}
 		currentangle = gyr->run();
+		l->setSpeed(0);
+		r->setSpeed(0);
 	}
 	// forward distance straight
-	void forward(float distance) {
+	void forward(float distance) 
+	{
 		float nowdistance = 0;
 		float targetangle = gyr->run();
 		float deltaangle = 0;
@@ -76,10 +90,10 @@ public:
 			r->setSpeed(a_rspeed);
 			float _speed = ((l->rps()+r->rps())/2)*12.095;
 			unsigned long long ms = (unsigned long long)(tv.tv_sec)*1000 +
-						(unsigned long long)(tv.tv_usec) / 1000;
+				(unsigned long long)(tv.tv_usec) / 1000;
 			gettimeofday(&tv, NULL);
 			unsigned long long msl = (unsigned long long)(tv.tv_sec)*1000 +
-						(unsigned long long)(tv.tv_usec) / 1000;
+				(unsigned long long)(tv.tv_usec) / 1000;
 			nowdistance = nowdistance+float((msl-ms))*_speed/1000;
 			current = odo->run();
 			currentangle = gyr->run();
@@ -91,3 +105,4 @@ public:
 	float getAngle() {
 		return currentangle;
 	}
+};
