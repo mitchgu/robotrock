@@ -4,7 +4,7 @@
 #include <sys/time.h>
 
 class Odometry {
-	static const float diameter = 4; //in
+	static const float diameter = 3.85; //in
 	static const float whealdistance = 10; //in
 	Location* location;
 	Motor* left;
@@ -32,6 +32,7 @@ run pointer=&object;
 */
 	Location* run()
 	{
+		gettimeofday(&tv, NULL);
 		if(init) 
 		{
 			float lrps = left->rps();
@@ -41,14 +42,13 @@ run pointer=&object;
 			unsigned long long ms = (unsigned long long)(tv.tv_sec)*1000 +
 						(unsigned long long)(tv.tv_usec) / 1000;
 			gettimeofday(&tv, NULL);
-			ms -= (unsigned long long)(tv.tv_sec)*1000 +
+			unsigned long long msl = (unsigned long long)(tv.tv_sec)*1000 +
 						(unsigned long long)(tv.tv_usec) / 1000;
-			int msi = (int)ms;
-			float msf = (float)msi;
+			float msf = (float)(msl-ms);
 			float distance = msf*speed/1000;
 			float angledelta = msf*rotationalspeed/1000;
-			float x = location->x()+ sin(location->theta())*distance;
-			float y = location->y()+ cos(location->theta())*distance;
+			float x = location->x()+ (sin(location->theta()))*distance;
+			float y = location->y()+ (cos(location->theta()))*distance;
 			float angle = location->theta()+angledelta;
 			location->set(x,y,angle);
 		}

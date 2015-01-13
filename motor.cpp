@@ -41,7 +41,7 @@ public:
 	}
 	void setSpeed(float set)
 	{
-		speed=set;
+		speed=0.010624*set+0.01136;
 		pwm->write(speed);
 	}
 	float getSpeed() { return speed; }
