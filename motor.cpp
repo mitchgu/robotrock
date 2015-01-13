@@ -26,7 +26,6 @@ public:
 		dir->dir(mraa::DIR_OUT);
 		hall->dir(mraa::DIR_IN);
 		side=_side;
-		std::cout<<"set at "<<side<<std::endl;
 		speed=0;
 	}	
 	void forward()
@@ -55,14 +54,18 @@ public:
 	/*
 	get the real speed
 	*/
-	float rps()
+	double rps()
 	{
+		if(volt<0.02) return 0;
 		struct timeval tv;
 		int reading = hall->read();
-		while(reading == hall->read())
+		int its=0;
+		while(reading == hall->read()&&its<500)
 		{
 			usleep(10);
+			its++;
 		}
+		if(its==500) return 0;
 		gettimeofday(&tv,NULL);
 		unsigned long long ms = (unsigned long long)(tv.tv_sec)*1000 +
 						(unsigned long long)(tv.tv_usec) / 1000;
@@ -70,11 +73,14 @@ public:
 		reading = hall->read();
 		while(count<=5) 
 		{
+			its++;
 			if (reading != hall->read())
 			{
 				count++;
 				reading = hall->read();
+				its=0;
 			}
+			if(its==500) return 0;
 			usleep(10);
 		}
 		gettimeofday(&tv,NULL);

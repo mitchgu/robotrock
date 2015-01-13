@@ -1,6 +1,5 @@
 #include <math.h>
 #include "motor.cpp"
-#include "data.cpp"
 #include <sys/time.h>
 
 class Odometry {
@@ -16,12 +15,12 @@ public:
 	{
 		left = l;
 		right = r;
+		init = false;
 		location = new Location(xval, yval, thetaval);
 	}
 /*
 reset odometry
 */
-
 	void set(Location* _location) 
 	{
 		location=_location;
@@ -35,6 +34,7 @@ run pointer=&object;
 		gettimeofday(&tv, NULL);
 		if(init) 
 		{
+			std::cout<<"ODOMIZING"<<std::endl;
 			float lrps = left->rps();
 			float rrps = right->rps();
 			float speed = (lrps+rrps)* M_PI * diameter/2; //ins
@@ -54,6 +54,7 @@ run pointer=&object;
 		}
 		else 
 		{
+			std::cout<<"INIT"<<std::endl;
 			init=true;
 			gettimeofday(&tv, NULL);
 		}
