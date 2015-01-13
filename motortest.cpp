@@ -23,35 +23,12 @@ int main()
 	Motion* motion = new Motion(left,right,gyr,location); 
 	motion->rotate(1.57);	
 	
-
-	/*const float target=0, K=0.003, base=0.15;
-
-	left.forward();
-	right.forward();
-
-	left.setSpeed(base);
-	right.setSpeed(base);
-
-	
 	while(running) 
 	{
-		
-		float angle=gyr.run();
-		float diff=(angle-target)*K;
-		std::cout<<angle<<" "<<diff<<std::endl;
-		left.setSpeed(base);
-		right.setSpeed(base);
-		if(diff>0) left.setSpeed(base+diff);
-		else right.setSpeed(base-diff);
-		sleep(0.01);
-		
-		float realspeed = right.rps();
-		std::cout<<realspeed<<" "<<std::endl;
+		motion->run();
+		//usleep(5000);
 	}
-	*/
-
-	left.setSpeed(0);
-	right.setSpeed(0);
-    	sleep(1);
-    	return 0;
+	left->stop(); right->stop();
+	sleep(1);
+	return 0;
 }

@@ -15,7 +15,7 @@ class Motor
 	mraa::Pwm* pwm;
 	mraa::Gpio* hall;
 	bool side; //0 -left or 1-right
-	float speed;
+	double speed,volt;
 public:
 	Motor(int dpin, int ppin, int hpin, bool _side)
 	{
@@ -39,10 +39,16 @@ public:
 		if(side) dir->write(1);
 		else dir->write(0);
 	}
-	void setSpeed(float set)
+	void stop() 
 	{
-		speed=0.010624*set+0.01136;
-		pwm->write(speed);
+		volt=speed=0;
+		pwm->write(volt);
+	}
+	void setSpeed(double set)
+	{
+		volt=0.010624*set+0.01136;
+		speed=set;
+		pwm->write(volt);
 	}
 	float getSpeed() { return speed; }
 
