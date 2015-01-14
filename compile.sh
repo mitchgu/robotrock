@@ -1,1 +1,1 @@
-g++ ballfoll.cpp motor.cpp cv.cpp gyro.cpp -o ballfoll `pkg-config opencv --cflags --libs` -lpthread -lmraa
+g++ ballfoll.cpp -o ballfoll `pkg-config opencv --cflags --libs` -lpthread -lmraa

@@ -1,6 +1,5 @@
 #include <math.h>
 #include "motor.cpp"
-#include "data.cpp"
 #include <sys/time.h>
 
 class Odometry {
@@ -16,12 +15,12 @@ public:
 	{
 		left = l;
 		right = r;
+		init = false;
 		location = new Location(xval, yval, thetaval);
 	}
 /*
 reset odometry
 */
-
 	void set(Location* _location) 
 	{
 		location=_location;

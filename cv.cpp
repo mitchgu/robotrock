@@ -82,7 +82,7 @@ int dfs(int i, int j, Mat &inFrame, int ind)
 	}
 	return ar;
 }
-void fill(Mat &inFrame, int ind)
+double fill(Mat &inFrame, int ind)
 {
 	comp=new int*[inFrame.rows];
 	cents.resize(0);
@@ -94,6 +94,7 @@ void fill(Mat &inFrame, int ind)
 		comp[i]=new int[inFrame.cols];
 		REP(j,inFrame.cols) comp[i][j]=-1;
 	}
+	double ret=0;
 	REP(i,inFrame.rows) REP(j,inFrame.cols) 
 	{
 		if(!check(i,j,inFrame,ind)) continue;
@@ -107,6 +108,7 @@ void fill(Mat &inFrame, int ind)
 			cents.pb(mp(ci,cj));
 			std::pair<double,double> dist=getDist(ci,cj);
 			std::cout<<"This point is "<<dist.first<<" inches away at angle "<<dist.second<<" to the normal \n";
+			ret=dist.second;
 			REP(x,5) REP(y,5) 
 			{
 				int ni=ci+x,nj=cj+y;
@@ -119,6 +121,7 @@ void fill(Mat &inFrame, int ind)
 		}
 		currentComp++;
 	}
+	return ret;
 }
 Mat brigChange(Mat frame)
 {

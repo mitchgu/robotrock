@@ -59,7 +59,7 @@ public:
 				float msf = (float)msi;
 				float rf = (float)reading;
 				total += -0.001 * msf * (rf / 80.0);
-				//printf("Total: %f, Reading: %f, Time: %f\n", total, rf, -msf);
+				printf("Total: %f, Reading: %f, Time: %f\n", total, rf, -msf);
 			}
 			else {
 				init = 1;
@@ -69,7 +69,7 @@ public:
 		else {
 			printf("No recv\n");
 		}
-		return total;
+		return total*3.14/180;
 	}
 
 };
