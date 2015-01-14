@@ -13,7 +13,8 @@
 class Motor
 {
 	mraa::I2c* i2c;
-	int dpin;
+	//int dpin;
+	mraa::Gpio* dir;//
 	int ppin;
 	mraa::Gpio* hall;
 	bool side; //0 -left or 1-right
@@ -23,21 +24,32 @@ public:
 	{
 		i2c = new mraa::I2c(6);
 		initPWM(i2c);
-		dpin = _dpin;
 		ppin = _ppin;
+		//dpin = _dpin;
+		dir=new mraa::Gpio(_dpin);//
+		dir->dir(mraa::DIR_OUT);//
+		dir= new mraa::Gpio(_hpin);
 		hall->dir(mraa::DIR_IN);
 		side=_side;
 		speed=0;
 	}	
 	void forward()
 	{
+		/*
 		if(side) writePWM(i2c, dpin, 0);
 		else writePWM(i2c, dpin, 1);
+		*/
+		if(side) dir->write(0);
+		else dir->write(1);
 	}
 	void backward()
 	{
+		/*
 		if(side) writePWM(i2c, dpin, 1);
 		else writePWM(i2c, dpin, 0);
+		*/
+		if(side) dir->write(1);
+		else dir->write(0);
 	}
 	void stop() 
 	{
