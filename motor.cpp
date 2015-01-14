@@ -7,47 +7,48 @@
 #include <signal.h>
 #include <math.h>
 #include "data.cpp"
+#include "i2c.cpp"
 
 
 class Motor
 {
-	mraa::Gpio* dir;
-	mraa::Pwm* pwm;
+	mraa::I2c* i2c;
+	int dpin;
+	int ppin;
 	mraa::Gpio* hall;
 	bool side; //0 -left or 1-right
 	double speed,volt;
 public:
-	Motor(int dpin, int ppin, int hpin, bool _side)
+	Motor(int _dpin, int _ppin, int _hpin, bool _side)
 	{
-		dir=new mraa::Gpio(dpin);
-		pwm=new mraa::Pwm(ppin);
-		hall=new mraa::Gpio(hpin);
-		pwm->enable(true);
-		dir->dir(mraa::DIR_OUT);
+		i2c = new mraa::I2c(6);
+		initPWM(i2c);
+		dpin = _dpin;
+		ppin = _ppin;
 		hall->dir(mraa::DIR_IN);
 		side=_side;
 		speed=0;
 	}	
 	void forward()
 	{
-		if(side) dir->write(0);
-		else dir->write(1);
+		if(side) writePWM(i2c, dpin, 0);
+		else writePWM(i2c, dpin, 1);
 	}
 	void backward()
 	{
-		if(side) dir->write(1);
-		else dir->write(0);
+		if(side) writePWM(i2c, dpin, 1);
+		else writePWM(i2c, dpin, 0);
 	}
 	void stop() 
 	{
 		volt=speed=0;
-		pwm->write(volt);
+		writePWM(i2c, ppin, 0);
 	}
 	void setSpeed(double set)
 	{
 		volt=0.010624*set+0.01136;
 		speed=set;
-		pwm->write(volt);
+		writePWM(i2c, ppin, volt/5);
 	}
 	float getSpeed() { return speed; }
 
