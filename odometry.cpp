@@ -34,7 +34,6 @@ run pointer=&object;
 		gettimeofday(&tv, NULL);
 		if(init) 
 		{
-			std::cout<<"ODOMIZING"<<std::endl;
 			float lrps = left->rps();
 			float rrps = right->rps();
 			float speed = (lrps+rrps)* M_PI * diameter/2; //ins
@@ -54,7 +53,6 @@ run pointer=&object;
 		}
 		else 
 		{
-			std::cout<<"INIT"<<std::endl;
 			init=true;
 			gettimeofday(&tv, NULL);
 		}

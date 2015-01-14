@@ -10,8 +10,7 @@
 #include <mraa.hpp>
 #include <signal.h>
 
-#include "gyro.cpp"
-#include "motor.cpp"
+#include "motion.cpp"
 #include "cv.cpp"
 
 int running=1;
@@ -26,23 +25,24 @@ void sig_handler(int signo)
 
 int main()
 {
-	Motor left(8,3,4,false),right(9,5,2,true);
-	Gyroscope gyr;
+	signal(SIGINT,sig_handler);
+	Motor* left = new Motor(8,6,4,false);
+	Motor* right = new Motor(9,5,2,true);
+	Gyroscope* gyr = new Gyroscope(10);
+	Location* location = new Location(0.0,0.0,0.0);
 
-	const float K=0.001, base=0.1;
+	Motion* motion = new Motion(left,right,gyr,location); 
+	//motion->rotate(1.57);	
+	const float K=10;
 	float target;
-	int neg;
-	std::cin>>neg;
-	left.forward();
-	right.forward();
-
-	left.setSpeed(base);
-	right.setSpeed(base);
 	VideoCapture cap(0);
 	assert(cap.isOpened());
 
-	while(running) 
+	motion->straight(10000);
+
+	while(running)
 	{
+		motion->run();
 		Mat in;
 		cap >> in;
 		std::cout << "Grabbed frame" << std::endl;
@@ -52,24 +52,20 @@ int main()
 
 		Mat out;
 		maxFilter(frame,2);
-		if(neg) target=-fill(frame,2);
-		else target=fill(frame,2);
-		float angle=gyr.run();
-		float diff=(target)*K;
-		if(target==0) diff=(angle-target)*K;
-		else gyr.reset();
-	
+		target=fill(frame,2)/3;
 
-		std::cout<<target<<" "<<angle<<" "<<diff<<std::endl;
-		left.setSpeed(base);
-		right.setSpeed(base);
-		if(diff>0) left.setSpeed(base+diff);
-		else right.setSpeed(base-diff);
-		sleep(0.9);
+		if(target!=0&&fabs(target)>5)
+		{
+			std::cout<<target<<" angle"<<std::endl;
+			motion->rotate(target*3.14/180);
+			while(!motion->run()) usleep(10000);
+			sleep(0.1);
+			motion->straight(10000);
+		}
+		usleep(10000);
 	}
 
-	left.setSpeed(0);
-	right.setSpeed(0);
-    	sleep(1);
+	left->stop(); right->stop();
+	sleep(1);
     	return 0;
 }

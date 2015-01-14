@@ -10,8 +10,8 @@
 #include "gyro.cpp"
 #include "odometry.cpp"
 
-const double Kp=20, Ki=8, Kd=10;
-const double mKp=10, mKi=0, mKd=0;
+const double Kp=12, Ki=7.5, Kd=2.4;
+const double mKp=5, mKi=0, mKd=0;
 
 class Motion
 {
@@ -45,19 +45,22 @@ class Motion
 	}
 	bool rotPID()
 	{
+			current = odo->run();
 			currentAngle = gyr->run();
 			double error=(targetAngle-currentAngle);
-			current = odo->run();
 			long long td=timeDiff();
-
-			if(error<0.1) { l->stop(); r->stop(); return true;} //change with move pid later
+			if(fabs(error)<0.03)
+			{ 
+				std::cout<<"TURNT!\n";
+				l->stop(); r->stop();
+				std::cout<<"setting error "<<error<<std::endl;
+				return true;
+			} //change with move pid later
 			intError+=td*error/1000;
 			double diffError=(error-prevError)/(td);
 			double speed = (error*Kp+intError*Ki+diffError*Kd);
-			/*std::cout<<"getting speed "<<l->getSpeed()<<std::endl;
 			std::cout<<"setting error "<<error<<std::endl;
-			std::cout<<"setting integral "<<intError<<std::endl;
-			std::cout<<"setting speed "<<speed<<std::endl;*/
+			std::cout<<"setting speed "<<speed<<std::endl;
 			if(speed>0) cw();
 			else { ccw(); speed=-speed;}
 			l->setSpeed(speed); r->setSpeed(speed);
@@ -70,13 +73,12 @@ class Motion
 			long long td=timeDiff();
 
 			if(moveDistance<0.01) { l->stop(); r->stop(); return true;} //change with move pid later
-			std::cout<<moveDistance<<std::endl;
 
 			double error=(targetAngle-currentAngle);
 			intError+=td*error/1000;
 			double diffError=(error-prevError)/(td);
 			double diff = (error*mKp+intError*mKi+diffError*mKd);
-			double baseSpeed=8;
+			double baseSpeed=10;
 			l->setSpeed(baseSpeed+diff);
 			r->setSpeed(baseSpeed-diff);
 			float _speed = ((l->rps()+r->rps())/2)*12.095;
@@ -104,10 +106,12 @@ public:
 	// rotate clockwise means angle > 0
 	void rotate( double angle) 
 	{
+		std::cout<<"ROTATING WITH "<<angle<<std::endl;
+		l->stop(); r->stop();
+		sleep(0.1);
 		currentAngle = gyr->run();
 		targetAngle = currentAngle + angle;
 		moveDistance=0;
-		l->stop(); r->stop();
 		rotating=true;
 		gettimeofday(&tv, NULL);
 		intError=0,prevError=angle;
@@ -115,14 +119,15 @@ public:
 	// forward distance straight
 	void straight(double distance) 
 	{
-		rotating=false;
-		currentAngle=targetAngle = gyr->run();
 		l->stop(); r->stop();
+		sleep(0.1);
+		rotating=false;
 		if(distance>0)  { l->forward(); r->forward(); }
 		else  { l->backward(); r->backward(); }
 		moveDistance=fabs(distance);
 		gettimeofday(&tv,NULL);
 		intError=0,prevError=0;
+		currentAngle=targetAngle = gyr->run();
 	}
 	Location* getLocation() {
 		return current;

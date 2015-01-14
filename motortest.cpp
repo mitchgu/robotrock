@@ -21,14 +21,16 @@ int main()
 
 	Motion* motion = new Motion(left,right,gyr,location); 
 	//motion->rotate(1.57);	
-	motion->straight(20);
+	motion->straight(8);
 	
 	for(int s=0;s<4;s++)
 	{
 		motion->straight(24);
-		while(!motion->run()) usleep(10000);
+		while(running&&!motion->run()) usleep(10000);
+		sleep(0.1);
 		motion->rotate(1.57);
-		while(!motion->run()) usleep(10000);
+		while(running&&!motion->run()) usleep(10000);
+		sleep(0.1);
 	}
 	left->stop(); right->stop();
 	sleep(1);
