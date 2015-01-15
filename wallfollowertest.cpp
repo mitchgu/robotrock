@@ -19,7 +19,8 @@ int main()
 	Location* location = new Location(0.0,0.0,0.0);
 	IR* irr = new IR(1);
 	IR* irl = new IR(3);
-	Wallfollower* wf = new Wallfollower(left,right,gyr,irr,irl,location); 
+	Wallfollower* wf = new Wallfollower(left,right,gyr,irl,irr,location); 
+	wf->setrotate(50);
 	while(running&&!wf->setAngle()) {}
 	left->stop(); right->stop();
 	sleep(1);

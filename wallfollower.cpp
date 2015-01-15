@@ -9,13 +9,13 @@ class Wallfollower {
 	Gyroscope* gyr;
 	Odometry* odo;
 	Location* current;
-	Motion* motion
+	Motion* motion;
 	float currentangle;
 	float base_angle; //the angle that parrallel to the wall
 	float target; //the distance that you want the robot to stay from the wall
 	float distance; //after running setAngle, the robot is this much from the wall
 	bool side_is_right; //use the right IR to detect
-	float prerdis, preldis; bool det; int cnt; //only for setAngle
+	float prerdis, preldis; bool det; int cnt;int cntdec; //only for setAngle
 	
 
 public:
@@ -25,27 +25,27 @@ public:
 		gyr = _gyr;
 		irl = _irl;
 		irr = _irr;
-		side = _side;
 		current = _start;
-		motion = Motion(left,right,gyr,location);
+		motion = new Motion(left,right,gyr,_start);
 		odo = new Odometry(_l, _r, _start->x(),_start->y(),_start->theta());
 		prerdis = irr->getDistance();
 		preldis = irl->getDistance();
 		cnt = 0;
+		cntdec = 0;
 		det = false;
 	}
-	setDistance(float _target) {
-		target = _taget;
+	void setDistance(float _target) {
+		target = _target;
 	}
 	void run(){
 
 	}
 	bool setAngle() {
+		std::cout<<"cnt:"<<cnt<<std::endl;
 		gyr->run();
 		current = odo->run();
-		motion->rotate(2);
-		motion->run();
 		usleep(10000);
+		std::cout<<"nowdr:  "<<prerdis<<"  &nowl:  "<<preldis<<std::endl;
 		float rdis = irr->getDistance(); float ldis = irl->getDistance();
 		if ((rdis==100) && (ldis==100) ) {
 			prerdis = 100; preldis = 100;
@@ -55,20 +55,35 @@ public:
 			if (rdis !=100) {
 				if(prerdis>rdis) {
 					prerdis = rdis;
-					det = true;
+					if (cnt!=0) {
+						cnt = 0;
+					}
+					if(cntdec<5) {
+						cntdec++;
+					}
+					else {
+						std::cout<<"detection mode right"<< std::endl;
+						det = true;
+					}
 					return false;
 				}
 				if(prerdis<rdis) {
+					prerdis = rdis;
+					if (cntdec<5) {
+						cntdec = 0;
+					}
 					if (!det) {return false;}
 					else {
 						if(cnt == 0){
+							std::cout<<"this is right cnt = 0"<<std::endl;
 							base_angle = gyr->run();
 							distance = rdis;
 						}
-						if (cnt>20) {
+						if (cnt>0) {
 							side_is_right = true;
 							cnt = 0;
 							det = false;
+							std::cout<<"this is right cnt = 20"<<std::endl;
 							return true;
 						}
 						else {cnt++;}
@@ -78,20 +93,35 @@ public:
 			else {
 				if(preldis>ldis) {
 					preldis = ldis;
-					det = true;
+					if(cnt!=0) {
+						cnt=0;
+					}
+					if(cntdec<5) {
+						cntdec++;
+					}
+					else {
+						std::cout<<"detection mode left"<<std::endl;
+						det = true;
+					}
 					return false;
 				}
 				if(preldis<ldis) {
+					preldis = ldis;
+					if(cntdec<5) {
+						cntdec = 0;
+					}
 					if (!det) {return false;}
 					else {
 						if(cnt == 0) {
-							base_angle = gyr->run()
+							std::cout<<"this is left cnt = 0"<<std::endl;
+							base_angle = gyr->run();
 							distance = ldis;
 						}
-						if (cnt>20) {
+						if (cnt>0) {
 							side_is_right = false;
 							cnt = 0;
 							det = false;
+							std::cout<<"this is left cnt = 20"<<std::endl;
 							return true;
 						}
 						else {cnt++;}
@@ -101,7 +131,13 @@ public:
 
 		}
 	}
-	void turn() {
+	void setrotate(float speed) {
+		left->forward();
+		right->backward();
+		left->setSpeed(speed);
+		right->setSpeed(speed);
+
+
 
 	}
-}
+};
