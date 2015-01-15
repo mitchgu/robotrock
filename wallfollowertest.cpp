@@ -20,8 +20,15 @@ int main()
 	IR* irr = new IR(1);
 	IR* irl = new IR(3);
 	Wallfollower* wf = new Wallfollower(left,right,gyr,irl,irr,location); 
+	/*
 	wf->setrotate(50);
 	while(running&&!wf->setAngle()) {}
+	*/
+	wf->setforward(60);
+	while(running)
+	{
+		wf->parallelrun();
+	}
 	left->stop(); right->stop();
 	sleep(1);
 	return 0;

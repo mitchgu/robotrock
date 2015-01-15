@@ -10,12 +10,16 @@ class Wallfollower {
 	Odometry* odo;
 	Location* current;
 	Motion* motion;
+	const float K1 = 5, K2 = 3, K3 = 2;
+	float base_speed;
 	float currentangle;
 	float base_angle; //the angle that parrallel to the wall
 	float target; //the distance that you want the robot to stay from the wall
 	float distance; //after running setAngle, the robot is this much from the wall
 	bool side_is_right; //use the right IR to detect
 	float prerdis, preldis; bool det; int cnt;int cntdec; //only for setAngle
+	float predif,prerror;
+	struct timeval tv;
 	
 
 public:
@@ -33,16 +37,43 @@ public:
 		cnt = 0;
 		cntdec = 0;
 		det = false;
+		prerror = 0;
+		predif = 0;
+	}
+	long long timeDiff()
+	{
+			unsigned long long ms = (unsigned long long)(tv.tv_sec)*1000 +
+				(unsigned long long)(tv.tv_usec) / 1000;
+			gettimeofday(&tv, NULL);
+			unsigned long long msl = (unsigned long long)(tv.tv_sec)*1000 +
+				(unsigned long long)(tv.tv_usec) / 1000;
+			return msl-ms;
 	}
 	void setDistance(float _target) {
 		target = _target;
 	}
-	void run(){
-
+	void setforward(float _base_speed) {
+		left->forward();
+		right->forward();
+		base_speed = _base_speed;
+	}
+	void parallelrun(){
+		float dt = timeDiff();
+		error = target-irl->getDistance();
+		float dif = (error-prerror)/dt;
+		float ddif = (predif-dif)/dt;
+		float dspeed = error*K1+dif*K2+ddif*K3;
+		left->setSpeed(base_speed+dspeed);
+		right->setSpeed(base_speed-dspeed);
+		prerror = error;
+		predif = dif;
+		currentgangle = gyr->run();
+		current = odo->run();
 	}
 	bool setAngle() {
+		gettimeofday(&tv, NULL);
 		std::cout<<"cnt:"<<cnt<<std::endl;
-		gyr->run();
+		currentangle = gyr->run();
 		current = odo->run();
 		usleep(10000);
 		std::cout<<"nowdr:  "<<prerdis<<"  &nowl:  "<<preldis<<std::endl;
