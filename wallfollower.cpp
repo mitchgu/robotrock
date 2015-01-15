@@ -1,6 +1,7 @@
 #include "motion.cpp"
 #include <iostream>
 #include "shortIR.cpp"
+const float K1 = 5, K2 = 3, K3 = 2;
 class Wallfollower {
 	IR* irl;
 	IR* irr;
@@ -10,7 +11,6 @@ class Wallfollower {
 	Odometry* odo;
 	Location* current;
 	Motion* motion;
-	const float K1 = 5, K2 = 3, K3 = 2;
 	float base_speed;
 	float currentangle;
 	float base_angle; //the angle that parrallel to the wall
@@ -59,7 +59,7 @@ public:
 	}
 	void parallelrun(){
 		float dt = timeDiff();
-		error = target-irl->getDistance();
+		float error = target-irl->getDistance();
 		float dif = (error-prerror)/dt;
 		float ddif = (predif-dif)/dt;
 		float dspeed = error*K1+dif*K2+ddif*K3;
@@ -67,7 +67,7 @@ public:
 		right->setSpeed(base_speed-dspeed);
 		prerror = error;
 		predif = dif;
-		currentgangle = gyr->run();
+		currentangle = gyr->run();
 		current = odo->run();
 	}
 	bool setAngle() {

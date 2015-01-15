@@ -25,6 +25,7 @@ int main()
 	while(running&&!wf->setAngle()) {}
 	*/
 	wf->setforward(60);
+	wf->setDistance(8);
 	while(running)
 	{
 		wf->parallelrun();
