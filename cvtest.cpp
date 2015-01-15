@@ -21,13 +21,17 @@ int main()
 	Mat testFrame;
 	cap >> testFrame;
 
-	Mat testOut;
+	Mat testOut,testEdge;
 
 	downSize(testFrame, testOut);
 	Size outSize = Size(testOut.cols, testOut.rows);
 
+	testEdge=canny(testOut);
+	Size edgeSize=Size(testEdge.cols,testEdge.rows);
+
 	VideoWriter outVid("test.avi", CV_FOURCC('M','P','4','2'),10,outSize,true);
 	VideoWriter recVid("rec.avi", CV_FOURCC('M','P','4','2'),10,outSize,true);
+	VideoWriter edgeVid("edge.avi", CV_FOURCC('M','P','4','2'),10,edgeSize,true);
 	assert(outVid.isOpened());
 
 	for (int i = 0; i < 50; ++i) 
@@ -40,10 +44,19 @@ int main()
 		downSize(in,frame); //downsized
 		recVid << frame; //recorded raw video
 
-		Mat out;
+		Mat emap,edge;
+		emap=canny(frame);
+
 		maxFilter(frame,2);
 		fill(frame,2);
+
+		frame.copyTo(edge,emap);
+
+		edgeVid<<edge;
+
+		Mat out;
 		outVid<<frame; //recorded processed video
+
 
 		struct timespec tim, tim2;
 		tim.tv_sec = 0;

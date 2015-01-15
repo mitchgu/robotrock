@@ -38,16 +38,24 @@ void hsv(Mat& inFrame, Mat& outFrame)
 }
 void maxFilter(Mat& frame, int ind, double multA=1.22, double multB=1.5)
 {
+	bool Y=false;
 	if(ind!=0) multA=multB=1.3;
+	if(ind==3) Y=true,ind=1,multA=0.8,1.12;
 	REP(i,frame.rows)
 	{
 		REP(j,frame.cols)
 		{
 			Vec3b& cur =frame.at<Vec3b>(i,j);
-			if(cur[ind]>60&&cur[ind]>multA*cur[(ind+1)%3]&&cur[ind]>multB*cur[(ind+2)%3])  cur[ind]=255;
-			else cur[ind]=0;
-			cur[(ind+1)%3]=0;
-			cur[(ind+2)%3]=0;
+			if(cur[ind]>60&&cur[ind]>multA*cur[(ind+1)%3]&&cur[ind]>multB*cur[(ind+2)%3])  
+			{
+				cur[ind]=255;
+				cur[(ind+1)%3]=Y?255:0;
+				cur[(ind+2)%3]=0;
+			}
+			else 
+			{
+				cur[ind]=cur[(ind+1)%3]=cur[(ind+2)%3]=0;
+			}
 		}
 	}
 }
@@ -84,6 +92,7 @@ int dfs(int i, int j, Mat &inFrame, int ind)
 }
 double fill(Mat &inFrame, int ind)
 {
+	if(ind==3) ind=1;
 	comp=new int*[inFrame.rows];
 	cents.resize(0);
 	currentComp=0;
@@ -135,11 +144,24 @@ Mat brigChange(Mat frame)
 			for( int c = 0; c < 3; c++ ) new_image.at<Vec3b>(y,x)[c] = saturate_cast<uchar>( alpha*( frame.at<Vec3b>(y,x)[c] ) + beta );
 		}
 	}
+	return new_image;
 }
-Mat edgeDetect(Mat& inFrame, Mat& outFrame)
+void edgeDetect(Mat& inFrame, Mat& outFrame)
 {
 	Mat kern = (Mat_<char>(3,3) <<  0, -1,  0,
 			-1,  4, -1,
 			0, -1,  0);
 	filter2D(inFrame, outFrame, inFrame.depth(), kern);
+}
+Mat canny(Mat &inFrame)
+{
+	const int edgeThresh=50;
+	Mat gray,edge,blu;
+	cvtColor(inFrame, gray, COLOR_BGR2GRAY);
+	blur(gray, blu, Size(3,3));
+	Canny(blu, edge, edgeThresh, edgeThresh*3, 3);
+	//out.create(inFrame.size(),inFrame.type());
+	//out= Scalar::all(0);
+	//inFrame.copyTo(out,edge);
+	return edge;
 }
