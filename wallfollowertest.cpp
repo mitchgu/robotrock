@@ -25,27 +25,34 @@ int main()
 	wf->setrotate(50);    //move parallel
 	while(running&&!wf->setAngle()) {};
 	wf->stop();
+		
 	wf->setforward(60); //walk along wall
 	wf->setDistance(8);
-	cornerdet = wf->incorner();
+	cornersignal = wf->incorner();
 	while(running) {
-		if (cornerdsignal==0) {
+		if (cornersignal==0) {
 			wf->parallelrun();
 		}
 		if (cornersignal==1) { //small corner dealer
 			(wf->getmotion())->rotate(-1.9);
 			while(running&&!(wf->getmotion())->run()) usleep(10000);
+			sleep(1.0);
 			wf->setrotate(50);
 			while(running&&!wf->setAngle()) {}
 			wf->stop();
+			sleep(1.0);
 		}
 		if (cornersignal==2) { //large corner dealer
-			(wf->getmotion())->straight(15);
+			(wf->getmotion())->straight(25);
 			while(running&&!(wf->getmotion())->run()) usleep(10000);
-			(wf->getmotion())->rotate(1.57);
+			sleep(1.0);
+			(wf->getmotion())->rotate(-1.5);
 			while(running&&!(wf->getmotion())->run()) usleep(10000);
-			(wf->getmotion())->straight(15);
+			sleep(1.0);
+			(wf->getmotion())->straight(25);
 			while(running&&!(wf->getmotion())->run()) usleep(10000);
+			sleep(1.0);
+			wf->stop();
 		}
 		cornersignal = wf->incorner();
 	}

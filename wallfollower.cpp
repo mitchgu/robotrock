@@ -6,6 +6,7 @@ class Wallfollower {
 	IR* irl;
 	IR* irr;
 	IR* irf;
+	IR* irb;
 	Motor* left;
 	Motor* right;
 	Gyroscope* gyr;
@@ -26,13 +27,14 @@ class Wallfollower {
 	
 
 public:
-	Wallfollower(Motor* _l, Motor* _r, Gyroscope* _gyr, IR* _irl, IR* _irr,IR* _irf, Location* _start) {
+	Wallfollower(Motor* _l, Motor* _r, Gyroscope* _gyr, IR* _irl, IR* _irr,IR* _irf,IR* _irb, Location* _start) {
 		left = _l;
 		right = _r;
 		gyr = _gyr;
 		irl = _irl;
 		irr = _irr;
 		irf = _irf;
+		irb = _irb;
 		current = _start;
 		motion = new Motion(left,right,gyr,_start);
 		odo = new Odometry(_l, _r, _start->x(),_start->y(),_start->theta());
@@ -174,7 +176,7 @@ public:
 
 		}
 	}
-	motion* getmotion(){
+	Motion* getmotion(){
 		return motion;
 	}
 	void stop(){
