@@ -5,12 +5,14 @@ const float K1 = 5, K2 = 3, K3 = 2;
 class Wallfollower {
 	IR* irl;
 	IR* irr;
+	IR* irf;
 	Motor* left;
 	Motor* right;
 	Gyroscope* gyr;
 	Odometry* odo;
 	Location* current;
 	Motion* motion;
+	int corner;
 	float base_speed;
 	float currentangle;
 	float base_angle; //the angle that parrallel to the wall
@@ -18,27 +20,26 @@ class Wallfollower {
 	float distance; //after running setAngle, the robot is this much from the wall
 	bool side_is_right; //use the right IR to detect
 	float prerdis, preldis; bool det; int cnt;int cntdec; //only for setAngle
-	float predif,prerror;
+	float predif,prerror; //only for parallelrun
+	int cornercnt; // only for cornercnt
 	struct timeval tv;
 	
 
 public:
-	Wallfollower(Motor* _l, Motor* _r, Gyroscope* _gyr, IR* _irl, IR* _irr, Location* _start) {
+	Wallfollower(Motor* _l, Motor* _r, Gyroscope* _gyr, IR* _irl, IR* _irr,IR* _irf, Location* _start) {
 		left = _l;
 		right = _r;
 		gyr = _gyr;
 		irl = _irl;
 		irr = _irr;
+		irf = _irf;
 		current = _start;
 		motion = new Motion(left,right,gyr,_start);
 		odo = new Odometry(_l, _r, _start->x(),_start->y(),_start->theta());
 		prerdis = irr->getDistance();
 		preldis = irl->getDistance();
-		cnt = 0;
-		cntdec = 0;
-		det = false;
-		prerror = 0;
-		predif = 0;
+		corner = 0;
+		cnt = 0; cntdec = 0; det = false; prerror = 0; predif = 0; cornercnt = 0;
 	}
 	long long timeDiff()
 	{
@@ -59,7 +60,7 @@ public:
 	}
 	void parallelrun(){
 		float dt = timeDiff();
-		float error = target-irl->getDistance();
+		float error = target-irr->getDistance();
 		float dif = (error-prerror)/dt;
 		float ddif = (predif-dif)/dt;
 		float dspeed = error*K1+dif*K2+ddif*K3;
@@ -69,6 +70,17 @@ public:
 		predif = dif;
 		currentangle = gyr->run();
 		current = odo->run();
+	}
+	int incorner(){   //0 for no corner, 1 for corner almost 90 degrees, 2 for corner almos
+		if (irf->getDistance()<=5.0) { return 1;}
+		if (irr->getDistance()==100) { 
+			if(cornercnt=0) {
+				cornercnt++;
+			} 
+			else { return 2;}
+		}
+		cornercnt = 0;
+		return 0;
 	}
 	bool setAngle() {
 		gettimeofday(&tv, NULL);
@@ -161,6 +173,13 @@ public:
 			}
 
 		}
+	}
+	motion* getmotion(){
+		return motion;
+	}
+	void stop(){
+		left->stop();
+		right->stop();
 	}
 	void setrotate(float speed) {
 		left->forward();
