@@ -1,6 +1,11 @@
 #include <iostream>
 #include "wallfollower.cpp"
 
+const float slp=0.5;
+const float big_corner_straight_distance=22;
+const float distance_to_wall=8;
+const float small_corner_rotate_angle=1.9;
+const float big_corner_rotate_angle= -1.9;
 int running=1;
 void sig_handler(int signo)
 {
@@ -20,41 +25,70 @@ int main()
 	Location* location = new Location(0.0,0.0,0.0);
 	IR* irf = new IR(0);
 	IR* irr = new IR(1);
+	IR* irb = new IR(2);
 	IR* irl = new IR(3);
-	Wallfollower* wf = new Wallfollower(left,right,gyr,irl,irr,irf,location); 
-	wf->setrotate(50);    //move parallel
-	while(running&&!wf->setAngle()) {};
+	Wallfollower* wf = new Wallfollower(left,right,gyr,irl,irr,irf,irb,location); 
+
+	//start
+	//step1 : move forward, until you see the wall
+	wf->straight(500);
+	while(running&&!wf->run()&&!wf->close_to_wall()) { usleep(10000);}
 	wf->stop();
-		
-	wf->setforward(60); //walk along wall
-	wf->setDistance(8);
+	sleep(slp);
+
+	//step2: go parallel to the wall
+	wf->smoothrotate(50);    //move parallel
+	while(running&&!wf->setAngle()) { usleep(10000)};
+	wf->stop();
+	sleep(slp);
+
+	//step3: run parallel to the wall and turn if there is a corner;
+	wf->smoothforward(60);       //walk along wall
+	wf->setDistance(distance_to_wall);
 	cornersignal = wf->incorner();
 	while(running) {
 		if (cornersignal==0) {
 			wf->parallelrun();
 		}
-		if (cornersignal==1) { //small corner dealer
-			(wf->getmotion())->rotate(-1.9);
-			while(running&&!(wf->getmotion())->run()) usleep(10000);
-			sleep(1.0);
+		if (cornersignal==1) {    //small corner dealer
+			//rotate for a almost 90 degrees
+			wf->rotate(small_corner_rotate_angle);
+			while(running&&!wf->run()) usleep(10000);
+			wf->stop();
+			sleep(slp);
+
+			//go parallel to the wall again
+			wf->setrotate(-50);
+			while(running&&!wf->setAngle()) {}
+			wf->stop();
+			sleep(slp);
+		}
+		if (cornersignal==2) {     //large corner dealer
+			//go straight for a little
+			wf->straight(big_corner_straight_distance);
+			while(running&&!wf->run()) usleep(10000);
+			wf->stop();
+			sleep(slp);
+
+			//rotate for almost -90 degrees
+			wf->rotate(big_corner_rotate_angle);
+			while(running&&!wf->run()) usleep(10000);
+			w->stop();
+			sleep(slp);
+
+			//go straight for a little
+			wf->straight(big_corner_straight_distance);
+			while(running&&!wf->run()) usleep(10000);
+			wf->stop();
+			sleep(slp);
+
+			//
 			wf->setrotate(50);
 			while(running&&!wf->setAngle()) {}
 			wf->stop();
-			sleep(1.0);
+			sleep(slp);
 		}
-		if (cornersignal==2) { //large corner dealer
-			(wf->getmotion())->straight(25);
-			while(running&&!(wf->getmotion())->run()) usleep(10000);
-			sleep(1.0);
-			(wf->getmotion())->rotate(-1.5);
-			while(running&&!(wf->getmotion())->run()) usleep(10000);
-			sleep(1.0);
-			(wf->getmotion())->straight(25);
-			while(running&&!(wf->getmotion())->run()) usleep(10000);
-			sleep(1.0);
-			wf->stop();
-		}
-		cornersignal = wf->incorner();
+		cornersignal = wf->incorner();   //check if there is a corner
 	}
 
 	/*

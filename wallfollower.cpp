@@ -2,6 +2,7 @@
 #include <iostream>
 #include "shortIR.cpp"
 const float K1 = 5, K2 = 3, K3 = 2;
+const float threshelddis = 7.0; 
 class Wallfollower {
 	IR* irl;
 	IR* irr;
@@ -24,8 +25,15 @@ class Wallfollower {
 	float predif,prerror; //only for parallelrun
 	int cornercnt; // only for cornercnt
 	struct timeval tv;
-	
-
+	long long timeDiff()
+	{
+			unsigned long long ms = (unsigned long long)(tv.tv_sec)*1000 +
+				(unsigned long long)(tv.tv_usec) / 1000;
+			gettimeofday(&tv, NULL);
+			unsigned long long msl = (unsigned long long)(tv.tv_sec)*1000 +
+				(unsigned long long)(tv.tv_usec) / 1000;
+			return msl-ms;
+	}
 public:
 	Wallfollower(Motor* _l, Motor* _r, Gyroscope* _gyr, IR* _irl, IR* _irr,IR* _irf,IR* _irb, Location* _start) {
 		left = _l;
@@ -43,22 +51,65 @@ public:
 		corner = 0;
 		cnt = 0; cntdec = 0; det = false; prerror = 0; predif = 0; cornercnt = 0;
 	}
-	long long timeDiff()
-	{
-			unsigned long long ms = (unsigned long long)(tv.tv_sec)*1000 +
-				(unsigned long long)(tv.tv_usec) / 1000;
-			gettimeofday(&tv, NULL);
-			unsigned long long msl = (unsigned long long)(tv.tv_sec)*1000 +
-				(unsigned long long)(tv.tv_usec) / 1000;
-			return msl-ms;
-	}
+
+
+	/*
+	setting the basic parameters
+	*/
 	void setDistance(float _target) {
 		target = _target;
 	}
-	void setforward(float _base_speed) {
+	void smoothforward(float _base_speed) {
 		left->forward();
 		right->forward();
 		base_speed = _base_speed;
+	}
+	void smoothrotate(float speed) {
+		left->forward();
+		right->backward();
+		left->setSpeed(speed);
+		right->setSpeed(speed);
+	}
+
+
+	/*
+	implement the motion in wallfollower
+	*/
+	bool run() {
+		return motion->run();
+	}
+	void straight(float distance){
+		motion->straight(distance);
+	}
+	void rotate(float angle){
+		motion->rotate(angle);
+	}
+	void stop(){
+		left->stop();
+		right->stop();
+	}
+
+
+	/*
+	steps that used in the test
+	*/
+	int incorner(){   //0 for no corner, 1 for corner almost 90 degrees, 2 for corner almos
+		if (irf->getDistance()<=5.0) { return 1;}
+		if (irr->getDistance()==100) { 
+			if(cornercnt=0) {
+				cornercnt++;
+			} 
+			else { return 2;}
+		}
+		cornercnt = 0;
+		return 0;
+	}
+	bool close_to_wall(){
+		bool f = (irf->getDistance())<threshelddis;
+		bool b = (irb->getDistance())<threshelddis;
+		bool l = (irl->getDistance())<threshelddis;
+		bool r = (irr->getDistance())<threshelddis;
+		return (f || b || l || r);
 	}
 	void parallelrun(){
 		float dt = timeDiff();
@@ -73,17 +124,6 @@ public:
 		currentangle = gyr->run();
 		current = odo->run();
 	}
-	int incorner(){   //0 for no corner, 1 for corner almost 90 degrees, 2 for corner almos
-		if (irf->getDistance()<=5.0) { return 1;}
-		if (irr->getDistance()==100) { 
-			if(cornercnt=0) {
-				cornercnt++;
-			} 
-			else { return 2;}
-		}
-		cornercnt = 0;
-		return 0;
-	}
 	bool setAngle() {
 		gettimeofday(&tv, NULL);
 		std::cout<<"cnt:"<<cnt<<std::endl;
@@ -97,6 +137,7 @@ public:
 			return false;
 		}
 		else {
+			/*
 			if (rdis !=100) {
 				if(prerdis>rdis) {
 					prerdis = rdis;
@@ -135,7 +176,9 @@ public:
 					}
 				}
 			}
-			else {
+			else
+			*/ 
+			{
 				if(preldis>ldis) {
 					preldis = ldis;
 					if(cnt!=0) {
@@ -176,20 +219,5 @@ public:
 
 		}
 	}
-	Motion* getmotion(){
-		return motion;
-	}
-	void stop(){
-		left->stop();
-		right->stop();
-	}
-	void setrotate(float speed) {
-		left->forward();
-		right->backward();
-		left->setSpeed(speed);
-		right->setSpeed(speed);
-
-
-
-	}
+	
 };
