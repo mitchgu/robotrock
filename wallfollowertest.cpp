@@ -3,7 +3,7 @@
 
 const float slp=0.5;
 const float big_corner_straight_distance=22;
-const float distance_to_wall=8;
+const float distance_to_wall=6;
 const float small_corner_rotate_angle=1.9;
 const float big_corner_rotate_angle= -1.9;
 int running=1;
@@ -31,19 +31,22 @@ int main()
 
 	//start
 	//step1 : move forward, until you see the wall
-	wf->straight(500);
-	while(running&&!wf->run()&&!wf->close_to_wall()) { usleep(10000);}
+	wf->smoothforward(10);
+	while(running&&!wf->close_to_wall()) { 
+		wf->smoothrun(10);
+		usleep(10000);
+	}
 	wf->stop();
 	sleep(slp);
 
 	//step2: go parallel to the wall
-	wf->smoothrotate(50);    //move parallel
-	while(running&&!wf->setAngle()) { usleep(10000)};
+	wf->smoothrotate(10);    //move parallel
+	while(running&&!wf->setAngle()) { usleep(10000);}
 	wf->stop();
 	sleep(slp);
 
 	//step3: run parallel to the wall and turn if there is a corner;
-	wf->smoothforward(60);       //walk along wall
+	wf->smoothforward(12);       //walk along wall
 	wf->setDistance(distance_to_wall);
 	cornersignal = wf->incorner();
 	while(running) {
@@ -51,6 +54,14 @@ int main()
 			wf->parallelrun();
 		}
 		if (cornersignal==1) {    //small corner dealer
+			std::cout<<"I detect a small wall!!"<<std::endl;
+			std::cout<<"I detect a small wall!!"<<std::endl;
+			std::cout<<"I detect a small wall!!"<<std::endl;
+			std::cout<<"I detect a small wall!!"<<std::endl;
+			std::cout<<"I detect a small wall!!"<<std::endl;
+			std::cout<<"I detect a small wall!!"<<std::endl;
+			std::cout<<"I detect a small wall!!"<<std::endl;
+			std::cout<<"I detect a small wall!!"<<std::endl;
 			//rotate for a almost 90 degrees
 			wf->rotate(small_corner_rotate_angle);
 			while(running&&!wf->run()) usleep(10000);
@@ -58,12 +69,20 @@ int main()
 			sleep(slp);
 
 			//go parallel to the wall again
-			wf->setrotate(-50);
+			wf->smoothrotate(-12);
 			while(running&&!wf->setAngle()) {}
 			wf->stop();
 			sleep(slp);
 		}
 		if (cornersignal==2) {     //large corner dealer
+			std::cout<<"I detect a big wall!!"<<std::endl;
+			std::cout<<"I detect a big wall!!"<<std::endl;
+			std::cout<<"I detect a big wall!!"<<std::endl;
+			std::cout<<"I detect a big wall!!"<<std::endl;
+			std::cout<<"I detect a big wall!!"<<std::endl;
+			std::cout<<"I detect a big wall!!"<<std::endl;
+			std::cout<<"I detect a big wall!!"<<std::endl;
+			std::cout<<"I detect a big wall!!"<<std::endl;
 			//go straight for a little
 			wf->straight(big_corner_straight_distance);
 			while(running&&!wf->run()) usleep(10000);
@@ -73,7 +92,7 @@ int main()
 			//rotate for almost -90 degrees
 			wf->rotate(big_corner_rotate_angle);
 			while(running&&!wf->run()) usleep(10000);
-			w->stop();
+			wf->stop();
 			sleep(slp);
 
 			//go straight for a little
@@ -83,7 +102,7 @@ int main()
 			sleep(slp);
 
 			//
-			wf->setrotate(50);
+			wf->smoothrotate(10);
 			while(running&&!wf->setAngle()) {}
 			wf->stop();
 			sleep(slp);

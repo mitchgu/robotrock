@@ -1,8 +1,8 @@
 #include "motion.cpp"
 #include <iostream>
 #include "shortIR.cpp"
-const float K1 = 5, K2 = 3, K3 = 2;
-const float threshelddis = 7.0; 
+const float K1 = 1, K2 = 0.6, K3 = 0.4;
+const float threshelddis = 9.0; 
 class Wallfollower {
 	IR* irl;
 	IR* irr;
@@ -71,6 +71,10 @@ public:
 		right->setSpeed(speed);
 	}
 
+	void smoothrun(float speed) {
+		left->setSpeed(speed);
+		right->setSpeed(speed);
+	}
 
 	/*
 	implement the motion in wallfollower
@@ -95,7 +99,7 @@ public:
 	*/
 	int incorner(){   //0 for no corner, 1 for corner almost 90 degrees, 2 for corner almos
 		if (irf->getDistance()<=5.0) { return 1;}
-		if (irr->getDistance()==100) { 
+		if (irl->getDistance()==100) { 
 			if(cornercnt=0) {
 				cornercnt++;
 			} 
