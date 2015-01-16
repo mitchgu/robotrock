@@ -21,9 +21,12 @@ int main(int argc, char** argv)
 	char* fileName=argv[1];
 	VideoCapture cap(0); 
 	if(!cap.isOpened())  return -1;
+	std::cout<<"till here!"<<std::endl;
 	Mat frame,out;
 	cap >> frame; // get a new frame from camera
+	std::cout<<"till read!"<<std::endl;
 	downSize(frame,out);
+	std::cout<<"till size!"<<std::endl;
 	imwrite( fileName, out );
 	return 0;
 }

@@ -155,7 +155,7 @@ void edgeDetect(Mat& inFrame, Mat& outFrame)
 }
 Mat canny(Mat &inFrame)
 {
-	const int edgeThresh=50;
+	const int edgeThresh=20;
 	Mat gray,edge,blu;
 	cvtColor(inFrame, gray, COLOR_BGR2GRAY);
 	blur(gray, blu, Size(3,3));
