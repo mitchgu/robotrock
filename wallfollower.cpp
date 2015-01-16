@@ -1,7 +1,7 @@
 #include "motion.cpp"
 #include <iostream>
 #include "shortIR.cpp"
-const float K1 = 1, K2 = 0.6, K3 = 0.4;
+const float K1 = 3, K2 = 3, K3 = 2;
 const float threshelddis = 9.0; 
 class Wallfollower {
 	IR* irl;
@@ -65,10 +65,30 @@ public:
 		base_speed = _base_speed;
 	}
 	void smoothrotate(float speed) {
-		left->forward();
-		right->backward();
+		if(speed>0)
+		{
+			left->forward();
+			right->backward();
+		}
+		else
+		{
+			speed=-speed;
+			right->forward();
+			left->backward();
+		}
 		left->setSpeed(speed);
 		right->setSpeed(speed);
+	}
+
+	void setup_parallelrun() {
+		predif = 0;
+		prerror = 0;
+		float dt = timeDiff();
+	}
+	void setup_rotate() {
+		cntdec = 0, cnt = 0, det = false;
+		prerdis = irr->getDistance();
+		preldis = irl->getDistance();
 	}
 
 	void smoothrun(float speed) {
@@ -98,7 +118,7 @@ public:
 	steps that used in the test
 	*/
 	int incorner(){   //0 for no corner, 1 for corner almost 90 degrees, 2 for corner almos
-		if (irf->getDistance()<=5.0) { return 1;}
+		if (irf->getDistance()<=9.0) { return 1;}
 		if (irl->getDistance()==100) { 
 			if(cornercnt=0) {
 				cornercnt++;
@@ -116,13 +136,16 @@ public:
 		return (f || b || l || r);
 	}
 	void parallelrun(){
+		std::cout<<"running parallel wall"<<std::endl;
+		std::cout<<"left IR reading"<<irl->getDistance()<<std::endl;
 		float dt = timeDiff();
-		float error = target-irr->getDistance();
+		float error = target-irl->getDistance();
 		float dif = (error-prerror)/dt;
 		float ddif = (predif-dif)/dt;
 		float dspeed = error*K1+dif*K2+ddif*K3;
-		left->setSpeed(base_speed+dspeed);
-		right->setSpeed(base_speed-dspeed);
+		float lspeed=base_speed+dspeed,rspeed=base_speed-dspeed;
+		left->setSpeed(lspeed);
+		right->setSpeed(rspeed);
 		prerror = error;
 		predif = dif;
 		currentangle = gyr->run();
@@ -141,87 +164,32 @@ public:
 			return false;
 		}
 		else {
-			/*
-			if (rdis !=100) {
-				if(prerdis>rdis) {
-					prerdis = rdis;
-					if (cnt!=0) {
-						cnt = 0;
-					}
-					if(cntdec<5) {
-						cntdec++;
-					}
-					else {
-						std::cout<<"detection mode right"<< std::endl;
-						det = true;
-					}
-					return false;
-				}
-				if(prerdis<rdis) {
-					prerdis = rdis;
-					if (cntdec<5) {
-						cntdec = 0;
-					}
-					if (!det) {return false;}
-					else {
-						if(cnt == 0){
-							std::cout<<"this is right cnt = 0"<<std::endl;
-							base_angle = gyr->run();
-							distance = rdis;
-						}
-						if (cnt>0) {
-							side_is_right = true;
-							cnt = 0;
-							det = false;
-							std::cout<<"this is right cnt = 20"<<std::endl;
-							return true;
-						}
-						else {cnt++;}
-					}
+			if(preldis>ldis) {
+				preldis = ldis, cnt=0;
+				if(cntdec<5) cntdec++;
+				else {
+					std::cout<<"detection mode left"<<std::endl;
+					det = true;
 				}
 			}
-			else
-			*/ 
+			else 
 			{
-				if(preldis>ldis) {
-					preldis = ldis;
-					if(cnt!=0) {
-						cnt=0;
+				preldis = ldis;
+				if(cntdec<5) cntdec = 0;
+				if (!det) return false;
+				else 
+				{
+					if (cnt>0) 
+					{
+						side_is_right = false;
+						std::cout<<"this is left cnt = 2"<<std::endl;
+						return true;
 					}
-					if(cntdec<5) {
-						cntdec++;
-					}
-					else {
-						std::cout<<"detection mode left"<<std::endl;
-						det = true;
-					}
-					return false;
-				}
-				if(preldis<ldis) {
-					preldis = ldis;
-					if(cntdec<5) {
-						cntdec = 0;
-					}
-					if (!det) {return false;}
-					else {
-						if(cnt == 0) {
-							std::cout<<"this is left cnt = 0"<<std::endl;
-							base_angle = gyr->run();
-							distance = ldis;
-						}
-						if (cnt>0) {
-							side_is_right = false;
-							cnt = 0;
-							det = false;
-							std::cout<<"this is left cnt = 20"<<std::endl;
-							return true;
-						}
-						else {cnt++;}
-					}
+					else cnt++;
 				}
 			}
-
 		}
+		return false;
 	}
 	
 };

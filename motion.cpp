@@ -10,11 +10,12 @@
 #include "gyro.cpp"
 #include "odometry.cpp"
 
-const double Kp=12, Ki=7.5, Kd=2.4;
-const double mKp=5, mKi=0, mKd=0;
+const double Kp=20, Ki=6, Kd=8;
+const double mKp=2, mKi=0.5, mKd=0.2;
 
 class Motion
 {
+protected:
 	Motor *l,*r;
 	Gyroscope* gyr;
 	Odometry* odo;
@@ -45,11 +46,12 @@ class Motion
 	}
 	bool rotPID()
 	{
+		std::cout<<"rotating"<<std::endl;
 			current = odo->run();
 			currentAngle = gyr->run();
 			double error=(targetAngle-currentAngle);
 			long long td=timeDiff();
-			if(fabs(error)<0.03)
+			if(fabs(error)<0.02)
 			{ 
 				std::cout<<"TURNT!\n";
 				l->stop(); r->stop();
@@ -68,6 +70,7 @@ class Motion
 	}
 	bool movPID()
 	{
+		std::cout<<"moving"<<std::endl;
 			currentAngle = gyr->run();
 			current = odo->run();
 			long long td=timeDiff();
@@ -78,7 +81,7 @@ class Motion
 			intError+=td*error/1000;
 			double diffError=(error-prevError)/(td);
 			double diff = (error*mKp+intError*mKi+diffError*mKd);
-			double baseSpeed=10;
+			double baseSpeed=40;
 			l->setSpeed(baseSpeed+diff);
 			r->setSpeed(baseSpeed-diff);
 			float _speed = ((l->rps()+r->rps())/2)*12.095;
@@ -134,5 +137,9 @@ public:
 	}
 	double getAngle() {
 		return currentAngle;
+	}
+	void adjustAngle(double angle)
+	{
+		currentAngle+=angle;
 	}
 };

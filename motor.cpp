@@ -19,7 +19,7 @@ class Motor
 	mraa::Gpio* hall;
 	bool side; //0 -left or 1-right
 	double speed,volt;
-	bool forward;
+	bool forw;
 public:
 	Motor(int _dpin, int _ppin, int _hpin, bool _side)
 	{
@@ -36,7 +36,7 @@ public:
 	}	
 	void forward()
 	{
-		forward = true;
+		forw = true;
 		if(side) writePWM(i2c, dpin, 0);
 		else writePWM(i2c, dpin, 1);
 		/*
@@ -46,7 +46,7 @@ public:
 	}
 	void backward()
 	{
-		forward = false;
+		forw = false;
 		if(side) writePWM(i2c, dpin, 1);
 		else writePWM(i2c, dpin, 0);
 		/*
@@ -61,26 +61,29 @@ public:
 	}
 	void setSpeed(double set)
 	{
+		std::cout<<"i want to set the speed! :D"<<std::endl;
+			
 		float _set = set;
-		if (setSpeed<0) {
-			if (forward && side) {
-				writePWM(i2c, dpin, 1);
-			}
-			if (forward && !side) {
-				writePWM(i2c, dpin, 0);
-			}
-			if (!forward && side) {
-				writePWM(i2c, dpin, 0);
-			}
-			if (!forward && !side) {
-				writePWM(i2c, dpin, 1);
-			}
+	/*	if (_set<0) {
 			_set = -_set;
-		}
-		assert(_set>0);
+			if (forw && side) {
+				writePWM(i2c, dpin, 1);
+			}
+			if (forw && !side) {
+				writePWM(i2c, dpin, 0);
+			}
+			if (!forw && side) {
+				writePWM(i2c, dpin, 0);
+			}
+			if (!forw && !side) {
+				writePWM(i2c, dpin, 1);
+			}
+		}*/
+		std::cout<<"speed:  "<<_set<<std::endl;
 		volt=0.010624*_set+0.01136;
 		speed=_set;
 		volt=std::min(1.0,volt);
+		volt=std::max(0.0,volt);
 		writePWM(i2c, ppin, volt);
 	}
 	float getSpeed() { return speed; }

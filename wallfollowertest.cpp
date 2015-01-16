@@ -1,9 +1,9 @@
 #include <iostream>
 #include "wallfollower.cpp"
 
-const float slp=0.5;
+const float slp=0.7;
 const float big_corner_straight_distance=22;
-const float distance_to_wall=6;
+const float distance_to_wall=10;
 const float small_corner_rotate_angle=1.9;
 const float big_corner_rotate_angle= -1.9;
 int running=1;
@@ -40,8 +40,11 @@ int main()
 	sleep(slp);
 
 	//step2: go parallel to the wall
-	wf->smoothrotate(10);    //move parallel
+	wf->smoothrotate(-10);    //move parallel
 	while(running&&!wf->setAngle()) { usleep(10000);}
+	//wf->setup_rotate();
+	//wf->smoothrotate(10);    //move parallel
+	//while(running&&!wf->setAngle()) { usleep(10000);}
 	wf->stop();
 	sleep(slp);
 
@@ -50,7 +53,9 @@ int main()
 	wf->setDistance(distance_to_wall);
 	cornersignal = wf->incorner();
 	while(running) {
+		cornersignal%=2;
 		if (cornersignal==0) {
+			wf->setup_parallelrun();
 			wf->parallelrun();
 		}
 		if (cornersignal==1) {    //small corner dealer
@@ -64,13 +69,17 @@ int main()
 			std::cout<<"I detect a small wall!!"<<std::endl;
 			//rotate for a almost 90 degrees
 			wf->rotate(small_corner_rotate_angle);
+			std::cout<<"yo! time to rotate!"<<std::endl;
 			while(running&&!wf->run()) usleep(10000);
 			wf->stop();
 			sleep(slp);
 
 			//go parallel to the wall again
+			wf->setup_rotate();
 			wf->smoothrotate(-12);
-			while(running&&!wf->setAngle()) {}
+			while(running&&!wf->setAngle()) usleep(10000);
+			wf->rotate(0.40);
+			while(running&&!wf->run()) usleep(10000);
 			wf->stop();
 			sleep(slp);
 		}
@@ -85,18 +94,21 @@ int main()
 			std::cout<<"I detect a big wall!!"<<std::endl;
 			//go straight for a little
 			wf->straight(big_corner_straight_distance);
+			std::cout<<"yo! big wall straight1"<<std::endl;
 			while(running&&!wf->run()) usleep(10000);
 			wf->stop();
 			sleep(slp);
 
 			//rotate for almost -90 degrees
 			wf->rotate(big_corner_rotate_angle);
+			std::cout<<"yo! big wall rotate"<<std::endl;
 			while(running&&!wf->run()) usleep(10000);
 			wf->stop();
 			sleep(slp);
 
 			//go straight for a little
 			wf->straight(big_corner_straight_distance);
+			std::cout<<"yo! big wall straight2"<<std::endl;
 			while(running&&!wf->run()) usleep(10000);
 			wf->stop();
 			sleep(slp);
