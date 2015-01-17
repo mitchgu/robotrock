@@ -1,10 +1,13 @@
 #include <math.h>
 #include "motor.cpp"
 #include <sys/time.h>
+#include "gyro.cpp"
 
+
+const float diameter = 3.85; //in
+const float whealdistance = 8.875; //in
 class Odometry {
-	static const float diameter = 3.85; //in
-	static const float whealdistance = 10; //in
+	Gyroscope* gyr;
 	Location* location;
 	Motor* left;
 	Motor* right;
@@ -15,6 +18,7 @@ public:
 	{
 		left = l;
 		right = r;
+		gyr = new Gyroscope(10);
 		init = false;
 		location = new Location(xval, yval, thetaval);
 	}
@@ -24,11 +28,15 @@ reset odometry
 	void set(Location* _location) 
 	{
 		location=_location;
+		gyr->reset(_location->theta());
 		gettimeofday(&tv,NULL);
 	}
 /*
 run pointer=&object;
 */
+	float getAngle(){
+		return location->theta();
+	}
 	Location* run()
 	{
 		gettimeofday(&tv, NULL);
@@ -37,7 +45,7 @@ run pointer=&object;
 			float lrps = left->rps();
 			float rrps = right->rps();
 			float speed = (lrps+rrps)* M_PI * diameter/2; //ins
-			float rotationalspeed = M_PI *(lrps-rrps)*diameter/whealdistance; //rps
+			float angle = gyr->run();
 			unsigned long long ms = (unsigned long long)(tv.tv_sec)*1000 +
 						(unsigned long long)(tv.tv_usec) / 1000;
 			gettimeofday(&tv, NULL);
@@ -45,10 +53,8 @@ run pointer=&object;
 						(unsigned long long)(tv.tv_usec) / 1000;
 			float msf = (float)(msl-ms);
 			float distance = msf*speed/1000;
-			float angledelta = msf*rotationalspeed/1000;
-			float x = location->x()+ (sin(location->theta()))*distance;
-			float y = location->y()+ (cos(location->theta()))*distance;
-			float angle = location->theta()+angledelta;
+			float x = location->x()+ (sin(angle))*distance;
+			float y = location->y()+ (cos(angle))*distance;
 			location->set(x,y,angle);
 		}
 		else 
