@@ -17,7 +17,6 @@ class Motion
 {
 protected:
 	Motor *l,*r;
-	Gyroscope* gyr;
 	Odometry* odo;
 	Location* current;
 	double currentAngle;
@@ -48,7 +47,7 @@ protected:
 	{
 		std::cout<<"rotating"<<std::endl;
 			current = odo->run();
-			currentAngle = gyr->run();
+			currentAngle = odo->getAngle();
 			double error=(targetAngle-currentAngle);
 			long long td=timeDiff();
 			if(fabs(error)<0.02)
@@ -71,8 +70,8 @@ protected:
 	bool movPID()
 	{
 		std::cout<<"moving"<<std::endl;
-			currentAngle = gyr->run();
 			current = odo->run();
+			currentAngle=odo->getAngle();
 			long long td=timeDiff();
 
 			if(moveDistance<0.01) { l->stop(); r->stop(); return true;} //change with move pid later
@@ -89,14 +88,12 @@ protected:
 			return false;
 	}
 public:
-	Motion( Motor* _l, Motor* _r, Gyroscope* _gyr, Location* _start) 
+	Motion( Motor* _l, Motor* _r,Odometry* _odo, Location* _start) 
 	{
 		l = _l;
 		r = _r;
-		gyr = _gyr;
-		float n = gyr->run();
-		odo = new Odometry(_l, _r, _start->x(),_start->y(),_start->theta());
-		current= _start;
+		odo = _odo;
+		current= odo->run();
 		targetAngle=currentAngle = _start->theta();
 		intError=moveDistance=0;
 		rotating=false;
@@ -112,7 +109,8 @@ public:
 		std::cout<<"ROTATING WITH "<<angle<<std::endl;
 		l->stop(); r->stop();
 		sleep(0.1);
-		currentAngle = gyr->run();
+		current = odo->run();
+		currentAngle=odo->getAngle();
 		targetAngle = currentAngle + angle;
 		moveDistance=0;
 		rotating=true;
@@ -130,7 +128,8 @@ public:
 		moveDistance=fabs(distance);
 		gettimeofday(&tv,NULL);
 		intError=0,prevError=0;
-		currentAngle=targetAngle = gyr->run();
+		current = odo->run();
+		currentAngle=targetAngle = odo->getAngle();
 	}
 	Location* getLocation() {
 		return current;

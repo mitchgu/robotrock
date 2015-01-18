@@ -19,6 +19,7 @@ public:
 		left = l;
 		right = r;
 		gyr = new Gyroscope(10);
+		gyr->reset(thetaval);
 		init = false;
 		location = new Location(xval, yval, thetaval);
 	}

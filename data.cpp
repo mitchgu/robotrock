@@ -28,6 +28,14 @@ public:
 	{
 		return _theta;
 	}
+	Location* move(dis,inputtheta) {
+		Location* returnlocation;
+		float returntheta = theta() + inputtheta;
+		float returnx = x()+dis*sin(returntheta);
+		float returny = y()+dis*cos(returntheta);
+		returnlocation->set(returnx, returny, returntheta);
+		return returnlocation;
+	}
 	float distance(Location* other)
 	{
 		return sqrt(pow((other->x()-x()),2.0)+pow((other->y()-y()),2.0));
