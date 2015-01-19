@@ -42,20 +42,20 @@ public:
         				if (line[i] == ',') {
             				sub = line.substr(comma+1,i-comma);
             				if (cnt==0) {
-            					xs = atoi( sub.c_str() );
+            					xs = 24*atoi( sub.c_str() );
             				}
             				if (cnt==1) {
-            					ys = atoi( sub.c_str() );
+            					ys = 24*atoi( sub.c_str() );
             				}
             				if (cnt==2) {
-            					xe = atoi( sub.c_str() );
+            					xe = 24*atoi( sub.c_str() );
             				}
             				cnt++;
             				comma = i;
           				}
         			}
         			sub = line.substr(comma+1,line.length()-comma);
-        			ye = atoi( sub.c_str() );
+        			ye = 24*atoi( sub.c_str() );
         			cnt=0; comma = 1;
                     std::cout<<"wall: "<<xs<<" "<<ys<<" "<<xe<<" "<<ye<<std::endl;
         			Wall* wall = new Wall(xs,ys,xe,ye);
@@ -95,12 +95,12 @@ public:
       				for (int i=2; i<line.length(); i++) {
         				if (line[i] == ',') {
             				sub = line.substr(comma+1,i-comma);
-            				xs = atoi( sub.c_str() );
+            				xs = 24*atoi( sub.c_str() );
             				comma = i;
             			}
             		}
             		sub = line.substr(comma+1,line.length()-comma);
-        			ys = atoi( sub.c_str() );
+        			ys = 24*atoi( sub.c_str() );
         			cnt=0; comma = 1;
         			start = new Point(xs,ys);
       			}
@@ -120,7 +120,7 @@ int main() {
     std::deque<Point*>* point_dq = map->stack_of_point();
     std::deque<Wall*>* wall_dq = map->stack_of_wall();
     for (std::deque<Wall*>::iterator it = wall_dq->begin(); it!=wall_dq->end(); ++it) {
-        std::cout<<"wall: "<<(*it)->xs()<<" "<<(*it)->ys()<<" "<<(*it)->xe()<<" "<<(*it)->ye()<<std::endl;
+        std::cout<<"wall: "<<(*it)->xs()<<" "<<(*it)->ys()<<" "<<(*it)->xe()<<" "<<(*it)->ye()<<" ,and angle: "<<(*it)->angle()<<std::endl;
     }
     return 0;
 }
