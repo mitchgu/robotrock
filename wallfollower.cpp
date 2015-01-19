@@ -95,12 +95,13 @@ public:
 	/*
 	tell Locating class which kind of signal is he passing
 	return -1 means missed the wall, please give up all the previous data
-	return 0 means nothing to return now
-	return 1 means the distance from the starting point to the first wall
-	return 2 means the angle of the wall and the line connect the starting point and the first parallel turn
-	return 3 means the distance of the wall from the first turning point to the first corner
-	return 4 means the angle of the wall
-	return 5 means the length of the wall
+	return 0 return nothing
+	return 1 return the origin
+	return 2 return nothing
+	return 3 return the first turning point
+	return 4 return small angle turning point
+	return 5 return large angle turning point
+	return 6 return after corner point
 	*/
 	int locating_channel() {
 		if (locating_return_channel == 0) {
@@ -273,7 +274,7 @@ public:
 					else {
 						stop();
 						channel4_mode = 0;
-						locating_return_channel = 3;
+						locating_return_channel = 6;
 						return 3;
 					}
 				}
@@ -361,7 +362,7 @@ public:
 					else {
 						stop();
 						channel5_mode = 0;
-						locating_return_channel = 3;
+						locating_return_channel = 6;
 						return 3;
 					}
 				}

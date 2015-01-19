@@ -18,10 +18,11 @@ int main(){
 	IR* irf = new IR(0);
 	IR* irr = new IR(1);
 	IR* irb = new IR(2);
-	IR* irlf = new IR(3);
-	IR* irlb = new IR(4);
+	IR* irlf = new IR(4);
+	IR* irlb = new IR(3);
 	wf = new Wallfollower(left,right,irlf,irlb,irr,irf,irb,location);
 	Locating* lct = new Locating();
+	lct->setup_startpoint;
 	int channel;
 	bool localized = false;
 	while(running &&!localized) {
@@ -30,6 +31,7 @@ int main(){
 		lct->data(wf->data());
 		localized = !lct->decision();
 	} 
+	Location* current = lct->get_location();
 }
 	
 	
