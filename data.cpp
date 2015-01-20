@@ -1,4 +1,5 @@
 #include <math.h>
+#include <algorithm>
 #include <assert.h> 
 
 class Point {
@@ -67,6 +68,11 @@ public:
 	}
 	Point e() {
 		return Point(_xe,_ye);
+	}
+	void swap()
+	{
+		std::swap(_xs,_xe);
+		std::swap(_ys,_ye);
 	}
 	float length() {
 		return wall_length;

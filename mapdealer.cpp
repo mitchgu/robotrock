@@ -111,16 +111,18 @@ class Mapdealer {
 		}
 	}
 	std::deque<Wall*>* getPolygon() {
+		std::deque<Wall*>* out=new std::deque<Wall*>;
 		sort(point_dq->begin(),point_dq->end());
-		std::deque<Wall*>* out;
 
 		Point beg=**(point_dq->begin()),cur=beg;
 		do
 		{
+			std::cout<<cur.x()<<" "<<cur.y()<<std::endl;
 			tr((*wall_dq))
 			{
 				if((*it)->s()==cur)
 				{
+					//std::cout<<"wall: "<<((*it)->xs())<<" "<<((*it)->xs())<<" "<<((*it)->xs())<<" "<<((*it)->xs())<<std::endl;
 					cur=(*it)->e();
 					out->push_back(*it);
 					wall_dq->erase(it);
@@ -128,7 +130,10 @@ class Mapdealer {
 				}
 				else if((*it)->e()==cur)
 				{
+					//std::cout<<"wall: "<<((*it)->xs())<<" "<<((*it)->xs())<<" "<<((*it)->xs())<<" "<<((*it)->xs())<<std::endl;
+		//std::cout<<"wall: "<<((*it)->xs())<<std::endl;
 					cur=(*it)->s();
+					(*it)->swap();
 					out->push_back(*it);
 					wall_dq->erase(it);
 					break;
@@ -148,12 +153,8 @@ class Mapdealer {
 int main() {
 	Mapdealer* map = new Mapdealer("example3.txt");
 	std::deque<Wall*>* test=map->getPolygon();
-	std::cout<<"POLYGON "<<std::endl;
-	tr((*test))
-	{
-		std::cout<<"wall: "<<(*it)->xs()<<" "<<(*it)->ys()<<" "<<(*it)->xe()<<" "<<(*it)->ye()<<std::endl;
-	}
-	std::cout<<"POLYGON "<<std::endl;
+	std::deque<Wall*>::iterator it;
+	for(it=(*test).begin();it!=(*test).end();it++) std::cout<<"wall: "<<((*it)->xs())<<" "<<((*it)->ys())<<" "<<((*it)->xe())<<" "<<((*it)->ye())<<std::endl;
 	std::deque<Point*>* point_dq = map->stack_of_point();
 	std::deque<Wall*>* wall_dq = map->stack_of_wall();
 	for (std::deque<Wall*>::iterator it = wall_dq->begin(); it!=wall_dq->end(); ++it) {
