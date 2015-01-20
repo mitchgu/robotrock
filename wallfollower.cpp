@@ -518,55 +518,47 @@ public:
 		}
 		if (cw) {
 			std::cout<<"paralleling clockwise"<<std::endl;
-				if(irlb>irlf) {
-					cnt=0;   
-					if(cntdec<5) cntdec++;
-					else {
-						std::cout<<"detection mode"<<std::endl;
-						det = true;
-					}
+			if(irlb>irlf) {
+				cnt=0;   
+				if(cntdec<5) cntdec++;
+				else {
+					std::cout<<"detection mode"<<std::endl;
+					det = true;
 				}
-				else 
-				{
-					if(cntdec<5) cntdec = 0;
-					if (!det) return false;
-					else 
-					{
-						if (cnt>0) 
-						{
-							std::cout<<"this is left cnt = 1"<<std::endl;
-							return true;
-						}
-						else cnt++;
+			}
+			else {
+				if(cntdec<5) cntdec = 0;
+				if (!det) return false;
+				else {
+					if (cnt>0) 	{
+						std::cout<<"this is left cnt = 1"<<std::endl;
+						return true;
 					}
+					else cnt++;
 				}
 			}
 			return false;
+		}
 		else {
 			std::cout<<"paralleling counterclockwise"<<std::endl;
+			if(irlb<irlf) {
+				cnt=0;   
+				if(cntdec<5) cntdec++;
+				else {
+					std::cout<<"detection mode"<<std::endl;
+					det = true;
+				}
+			}
 			else {
-				if(irlb<irlf) {
-					cnt=0;   
-					if(cntdec<5) cntdec++;
-					else {
-						std::cout<<"detection mode"<<std::endl;
-						det = true;
+				if(cntdec<5) cntdec = 0;
+				if (!det) return false;
+				else {
+					if (cnt>0)	{
+						std::cout<<"this is left cnt = 1"<<std::endl;
+						return true;
 					}
-				}
-				else 
-				{
-					if(cntdec<5) cntdec = 0;
-					if (!det) return false;
-					else 
-					{
-						if (cnt>0) 
-						{
-							std::cout<<"this is left cnt = 1"<<std::endl;
-							return true;
-						}
-						else cnt++;
-					}
-				}
+					else cnt++;
+				}				
 			}
 			return false;
 		}
