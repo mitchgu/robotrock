@@ -1,15 +1,15 @@
 #include "motion.cpp"
 #include <iostream>
 #include "shortIR.cpp"
-const float Kpw = 0.3, Kdw = 1, Kiw = 0.01;
-const float threshelddis = 8.0; //for the first approaching to wall
+const float Kpw = 0.3, Kdw = 1, Kiw = 0.0002;
+const float threshelddis = 5.0; //for the first approaching to wall
 const float fm_angle = 0.3;   //
-const float base_speed = 15;
+const float base_speed = 20;
 const float slp=0.7;
 const float big_corner_straight_distance=22;
-const float distance_to_wall=10;
-const float small_corner_rotate_angle=1.9;
-const float big_corner_rotate_angle= -1.9;
+const float distance_to_wall=7;
+const float small_corner_rotate_angle=1.5;
+const float big_corner_rotate_angle= -1.5;
 const float robotwidth =13;
 const float rotate_stuck_time = 10;
 const float parallel_run_stuck_time = 15;
@@ -37,7 +37,7 @@ class Wallfollower {
 	bool det; bool cw; bool forw; int cnt;int cntdec; //only for setAngle
 	unsigned long long backward_base_time; struct timeval btv; bool bdet; int bcnt; int bcntdec; float prebdis; // only for facing air
 	unsigned long long check_stuck_base_time; struct timeval stktv;
-	float integration; //prerror; //only for parallelrun
+	float integration, prerror; //only for parallelrun
 	int cornercnt; // only for cornercnt
 	struct timeval tv;
 
@@ -203,6 +203,7 @@ public:
 				else {
 					channel_stop();
 					locating_return_channel = 3;
+					sleep(2);
 					return 3;
 				}
 			}
@@ -467,7 +468,9 @@ public:
 		check_stuck_base_time = (unsigned long long)(stktv.tv_sec)*1000 +
 			(unsigned long long)(stktv.tv_usec) / 1000;
 		integration = 0;
-		//prerror = 0;
+		left->forward();
+		right->forward();
+		prerror = 0;
 		float dt = timeDiff();
 	}
 	void setup_parallel_to_wall() {
@@ -504,16 +507,17 @@ public:
 	void parallelrun(){
 		float estimatedis = estimatedistance();
 		std::cout<<"running parallel wall"<<std::endl;
-		std::cout<<"distance from the wall:  "<<estimatedis<<std::endl;
+		std::cout<<"distance from the wall:  "<<estimatedis<<"  front sensor:  " << irlf->getDistance()<<std::endl;
 		float dt = timeDiff();
 		float error = target - estimatedis;
-		float dif = irlf-irlb;  //(error-prerror)/dt;
+		float dif = (error-prerror)/dt;
 		integration = integration + error*dt;
 		float dspeed = error*Kpw+dif*Kdw+integration*Kiw;
 		float lspeed=base_speed+dspeed,rspeed=base_speed-dspeed;
+		std::cout<<"leftspeed:  "<< lspeed<<"  rightspeed:  "<<rspeed<<std::endl;
 		left->setSpeed(lspeed);
 		right->setSpeed(rspeed);
-		//prerror = error;
+		prerror = error;
 		current = odo->run();
 	}
 	bool parallel_to_wall() {
@@ -526,7 +530,8 @@ public:
 		if ((lbdis==100) || (lfdis==100) ) {
 			return false;
 		}
-		if (((lbdis-lfdis)<1.0) || ((lfdis-lbdis)<1.0)) {
+		if (((lbdis-lfdis)<1.0) && ((lfdis-lbdis)<1.0)) {
+			std::cout<<" I have been here" <<std::endl;
 			return true;
 		}
 		else {
