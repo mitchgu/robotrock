@@ -182,6 +182,8 @@ public:
 		if(channel == 2) {                      //step2 : parallel to wall
 			std::cout<<"channel 2: parallel to wall! "<<std::endl;
 			if (!initialized) {
+				check_stuck_base_time = (unsigned long long)(stktv.tv_sec)*1000 +
+					(unsigned long long)(stktv.tv_usec) / 1000;
 				setup_smoothrotate(15);
 				setup_parallel_to_wall();
 				initialized = true;
@@ -264,6 +266,8 @@ public:
 				std::cout<<"small angle corner parallel to wall! "<<std::endl;
 				if (!initialized) {
 					setup_parallel_to_wall();
+					check_stuck_base_time = (unsigned long long)(stktv.tv_sec)*1000 +
+						(unsigned long long)(stktv.tv_usec) / 1000;
 					setup_smoothrotate(-15);
 					initialized = true;
 					return 4;
@@ -351,6 +355,8 @@ public:
 			if (channel5_mode == 3){
 				std::cout<<"big angle corner go parallel to the wall! "<<std::endl;
 				if (!initialized) {
+					check_stuck_base_time = (unsigned long long)(stktv.tv_sec)*1000 +
+						(unsigned long long)(stktv.tv_usec) / 1000;
 					setup_parallel_to_wall();
 					setup_smoothrotate(15);
 					initialized = true;
@@ -432,8 +438,6 @@ public:
 		}
 	}
 	void setup_smoothrotate(float speed) {
-		check_stuck_base_time = (unsigned long long)(stktv.tv_sec)*1000 +
-			(unsigned long long)(stktv.tv_usec) / 1000;
 		if(speed>0)
 		{
 			cw=true;
@@ -514,9 +518,7 @@ public:
 	}
 	bool parallel_to_wall() {
 		gettimeofday(&stktv, NULL);
-		std::cout<<"cnt:"<<cnt<<std::endl;
 		current = odo->run();
-		usleep(10000);
 		// do parallel to wall
 		float lbdis = irlb->getDistance();
 		float lfdis = irlf->getDistance();
@@ -524,54 +526,11 @@ public:
 		if ((lbdis==100) || (lfdis==100) ) {
 			return false;
 		}
-		if (cw) {
-			std::cout<<"paralleling clockwise"<<std::endl;
-			if(lbdis>lfdis) {
-				cnt=0;   
-				if(cntdec<3) {
-					cntdec++;
-					std::cout<< "countdecrement:  "<<cntdec<<std::endl;
-				}
-				else {
-					std::cout<<"detection mode"<<std::endl;
-					std::cout<< "countdec:  "<<cntdec<<std::endl;
-					det = true;
-				}
-			}
-			else {
-				cntdec = 0;
-				if (!det) return false;
-				else {
-					if (cnt>0) 	{
-						std::cout<<"this is left cnt = 1"<<std::endl;
-						return true;
-					}
-					else cnt++;
-				}
-			}
-			return false;
+		if (((lbdis-lfdis)<1.0) || ((lfdis-lbdis)<1.0)) {
+			return true;
 		}
 		else {
-			std::cout<<"paralleling counterclockwise"<<std::endl;
-			if(lbdis<lfdis) {
-				cnt=0;   
-				if(cntdec<5) cntdec++;
-				else {
-					std::cout<<"detection mode"<<std::endl;
-					det = true;
-				}
-			}
-			else {
-				cntdec = 0;
-				if (!det) return false;
-				else {
-					if (cnt>0)	{
-						std::cout<<"this is left cnt = 1"<<std::endl;
-						return true;
-					}
-					else cnt++;
-				}				
-			}
+			setup_smoothrotate((lbdis-lfdis)*5);
 			return false;
 		}
 	}
