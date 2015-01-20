@@ -1,16 +1,15 @@
 #include "motion.cpp"
 #include <iostream>
 #include "shortIR.cpp"
-//const float Kpw = 0.3, Kdw = 1, Kiw = 0.0002;
-const float K1 = 5, K2 = 3, K3 = 2;
-const float threshelddis = 5.0; //for the first approaching to wall
+const float Kpw = 0.3, Kdw = 1, Kiw = 0.01;
+const float threshelddis = 8.0; //for the first approaching to wall
 const float fm_angle = 0.3;   //
-const float base_speed = 20;
+const float base_speed = 15;
 const float slp=0.7;
 const float big_corner_straight_distance=22;
-const float distance_to_wall=7;
-const float small_corner_rotate_angle=1.5;
-const float big_corner_rotate_angle= -1.5;
+const float distance_to_wall=10;
+const float small_corner_rotate_angle=1.9;
+const float big_corner_rotate_angle= -1.9;
 const float robotwidth =13;
 const float rotate_stuck_time = 10;
 const float parallel_run_stuck_time = 15;
@@ -204,7 +203,6 @@ public:
 				else {
 					channel_stop();
 					locating_return_channel = 3;
-					sleep(2);
 					return 3;
 				}
 			}
@@ -527,8 +525,7 @@ public:
 		if ((lbdis==100) || (lfdis==100) ) {
 			return false;
 		}
-		if (((lbdis-lfdis)<1.0) && ((lfdis-lbdis)<1.0)) {
-			std::cout<<" I have been here" <<std::endl;
+		if (((lbdis-lfdis)<1.0) || ((lfdis-lbdis)<1.0)) {
 			return true;
 		}
 		else {
