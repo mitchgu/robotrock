@@ -2,21 +2,37 @@
 #include <assert.h> 
 
 class Point {
-	int _x;
-	int _y;
+	float _x;
+	float _y;
 public:
-	Point(int x,int y) {
+	Point(float x,float y) {
 		_x = x;
 		_y = y;
 	}
-	int x() {
+	float x() {
 		return _x;
 	}
-	int y() {
+	float y() {
 		return _y;
 	}
 	bool equalTo(Point* other) {
 		return ((x() == other->x())&&(y() == other->y()));
+	}
+	float distance(Point* other){
+		return sqrt(pow((other->x()-x()),2.0)+pow((other->y()-y()),2.0));
+	}
+	float three_points_angle(Point* p1, Point* p2) {
+		float theta1 = atan((p1->x()-x())/(p1->y()-y()));
+		float theta2 = atan((p2->x()-p1->x())/(p2->y()-p1->y()));
+		return (theta1-theta2);
+	}
+	Point* four_points_crossing(Point* p1, Point* p2, Point* p3) {
+		float m1 = (x()-p1->x())/(y()-p1->y());
+		float m2 = (p2->x()-p3->x())/(p2->y()-p3->y());
+		float return_x = (m1*m2*(p3->y()-y())+m2*x()-m1*p3->x())/(m2-m1);
+		float return_y = (x()-p3->x()+m2*p3->y()-m1*y())/(m2-m1);
+		Point* return_point = new Point(return_x,return_y);
+		return return_point;
 	}
 };
 
@@ -119,6 +135,10 @@ public:
 		float returny = y()+dis*cos(returntheta);
 		returnlocation->set(returnx, returny, returntheta);
 		return returnlocation;
+	}
+	Point* point() {
+		Point* pt = new Point(x(),y());
+		return pt;
 	}
 	float distance(Location* other)
 	{

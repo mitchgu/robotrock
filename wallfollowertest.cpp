@@ -23,7 +23,7 @@ int main(){
 	wf = new Wallfollower(left,right,irlf,irlb,irr,irf,irb,location);
 	Locating* lct = new Locating();
 	lct->setup_startpoint;
-	int channel;
+	int channel=1;
 	bool localized = false;
 	while(running &&!localized) {
 		channel = wf->run_follower(channel);

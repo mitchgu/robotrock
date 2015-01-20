@@ -10,8 +10,6 @@ const float big_corner_straight_distance=22;
 const float distance_to_wall=10;
 const float small_corner_rotate_angle=1.9;
 const float big_corner_rotate_angle= -1.9;
-const float angle_error = 0.2;
-const float distance_error = 5;
 const float robotwidth =13;
 const float rotate_stuck_time = 10;
 const float parallel_run_stuck_time = 15;
@@ -48,7 +46,7 @@ class Wallfollower {
 	int mode;
 	int locating_return_channel;
 	Location* crossing_point;
-	Location return_point; // the data that is going to pass to Locating class
+	Location* return_point; // the data that is going to pass to Locating class
 
 
 	void channel_stop(){
@@ -119,6 +117,9 @@ public:
 			locating_return_channel = 0;
 			return return_channel;
 		}
+	}
+	Location* data() {
+		return return_point;
 	}
 
 	int run_follower(int channel) {
