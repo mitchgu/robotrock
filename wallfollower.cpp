@@ -1,7 +1,7 @@
 #include "motion.cpp"
 #include <iostream>
 #include "shortIR.cpp"
-const float Kp = 3, Kd = 3, Ki = 2;
+const float Kpw = 3, Kdw = 3, Kiw = 2;
 const float threshelddis = 9.0; //for the first approaching to wall
 const float fm_angle = 0.3;   //
 const float base_speed = 15;
@@ -33,7 +33,7 @@ class Wallfollower {
 	float base_angle; //the angle that parrallel to the wall
 	float target; //the distance that you want the robot to stay from the wall
 	float distance; //after running setAngle, the robot is this much from the wall
-	bool det; bool cw; bool forw; bool forw; int cnt;int cntdec; //only for setAngle
+	bool det; bool cw; bool forw; int cnt;int cntdec; //only for setAngle
 	unsigned long long backward_base_time; struct timeval btv; bool bdet; int bcnt; int bcntdec; float prebdis; // only for facing air
 	unsigned long long check_stuck_base_time; struct timeval stktv;
 	float integration,prerror; //only for parallelrun
@@ -110,10 +110,10 @@ public:
 			return -1;
 		}  
 		if ((locating_return_channel !=0) &&(locating_return_channel !=(-1))) {
-			float shortside = (robotwidth/2)+estimatedistance;
+			float shortside = (robotwidth/2)+estimatedistance();
 			crossing_point = current->move(shortside, -1.5708);
 			return_point = crossing_point;
-			return_channel = locating_return_channel;
+			float return_channel = locating_return_channel;
 			locating_return_channel = 0;
 			return return_channel;
 		}
@@ -485,19 +485,19 @@ public:
 		bool lb = (irlb->getDistance())<threshelddis;
 		bool lf = (irlf->getDistance())<threshelddis;
 		bool r = (irr->getDistance())<threshelddis;
-		return (f || b || l || r);
+		return (f || b || lb || lf || r);
 	}
 	void parallelrun(){
 		float irlfd = irlf->getDistance();
 		float irlbd = irlb->getDistance();
-		float estimatedis = (irlfd+irlbd)*cos(fm_angle)/2
+		float estimatedis = (irlfd+irlbd)*cos(fm_angle)/2;
 		std::cout<<"running parallel wall"<<std::endl;
 		std::cout<<"distance from the wall:  "<<estimatedis<<std::endl;
 		float dt = timeDiff();
 		float error = target - estimatedis;
 		float dif = irlf-irlb;  //(error-prerror)/dt;
 		integration = integration + error*dt;
-		float dspeed = error*Kp+dif*Kd+integration*Ki;
+		float dspeed = error*Kpw+dif*Kdw+integration*Kiw;
 		float lspeed=base_speed+dspeed,rspeed=base_speed-dspeed;
 		left->setSpeed(lspeed);
 		right->setSpeed(rspeed);
@@ -518,7 +518,6 @@ public:
 		}
 		if (cw) {
 			std::cout<<"paralleling clockwise"<<std::endl;
-			else {
 				if(irlb>irlf) {
 					cnt=0;   
 					if(cntdec<5) cntdec++;
@@ -543,7 +542,6 @@ public:
 				}
 			}
 			return false;
-		}
 		else {
 			std::cout<<"paralleling counterclockwise"<<std::endl;
 			else {
