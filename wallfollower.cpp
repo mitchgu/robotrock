@@ -135,6 +135,7 @@ public:
 				return 0;
 			}
 			else {
+				std::cout<<"smooth rotate run!!"<<std::endl;
 				smoothrotate_run();
 				usleep(10000);
 				if (!back_facing_wall()) {
@@ -157,12 +158,15 @@ public:
 			else{
 				gettimeofday(&stktv, NULL); 
 				if ((((unsigned long long)(stktv.tv_sec)*1000 +
-					(unsigned long long)(stktv.tv_usec) / 1000)-check_stuck_base_time)> forward_stuck_time*1000) {
+					(unsigned long long)(stktv.tv_usec) / 1000)-check_stuck_base_time)> forward_stuck_time*100000) {
+					std::cout<<"running out of time"<<check_stuck_base_time<<"  "<<((unsigned long long)(stktv.tv_sec)*1000 +
+							                                         (unsigned long long)(stktv.tv_usec) / 1000)<<std::endl;
 					return 0;
 				}
 				smoothforward_run();
 				usleep(10000);
 				if (!close_to_wall()) {
+					std::cout<<"run through"<<std::endl;
 					return 1;
 				}
 				else {
@@ -408,7 +412,7 @@ public:
 	*/
 	void setup_smoothforward(float speed) {
 		gettimeofday(&stktv, NULL);
-		check_stuck_base_time = (unsigned long long)(tv.tv_sec)*1000 +
+		check_stuck_base_time = (unsigned long long)(stktv.tv_sec)*1000 +
 			(unsigned long long)(stktv.tv_usec) / 1000;
 		if(speed>0)
 		{
@@ -426,7 +430,7 @@ public:
 		}
 	}
 	void setup_smoothrotate(float speed) {
-		check_stuck_base_time = (unsigned long long)(tv.tv_sec)*1000 +
+		check_stuck_base_time = (unsigned long long)(stktv.tv_sec)*1000 +
 			(unsigned long long)(stktv.tv_usec) / 1000;
 		if(speed>0)
 		{
@@ -454,7 +458,7 @@ public:
 		current = odo->run();
 	}
 	void setup_parallelrun() {
-		check_stuck_base_time = (unsigned long long)(tv.tv_sec)*1000 +
+		check_stuck_base_time = (unsigned long long)(stktv.tv_sec)*1000 +
 			(unsigned long long)(stktv.tv_usec) / 1000;
 		integration = 0;
 		//prerror = 0;
