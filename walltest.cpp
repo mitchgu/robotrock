@@ -17,10 +17,10 @@ int main(){
 	Location* location = new Location(0.0,0.0,0.0);
 	IR* irf = new IR(0);
 	IR* irr = new IR(1);
-	IR* irb = new IR(2);
-	IR* irlf = new IR(4);
-	IR* irlb = new IR(3);
-	Wallfollower* wf= new Wallfollower(left,right,irlf,irlb,irr,irf,irb,location);
+	//IR* irb = new IR(2);
+	IR* irlf = new IR(3);
+	IR* irlb = new IR(2);
+	Wallfollower* wf= new Wallfollower(left,right,irlf,irlb,irr,irf,location);
 	int channel=1;
 	bool localized = false;
 	while(running &&!localized) {
