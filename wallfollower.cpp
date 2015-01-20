@@ -14,6 +14,7 @@ const float robotwidth =13;
 const float rotate_stuck_time = 10;
 const float parallel_run_stuck_time = 15;
 const float forward_stuck_time = 15;
+const float small_corner_threshold_distance=9.0;
 
 
 class Wallfollower {
@@ -36,7 +37,7 @@ class Wallfollower {
 	bool det; bool cw; bool forw; int cnt;int cntdec; //only for setAngle
 	unsigned long long backward_base_time; struct timeval btv; bool bdet; int bcnt; int bcntdec; float prebdis; // only for facing air
 	unsigned long long check_stuck_base_time; struct timeval stktv;
-	float integration,prerror; //only for parallelrun
+	float integration; //prerror; //only for parallelrun
 	int cornercnt; // only for cornercnt
 	struct timeval tv;
 
@@ -140,7 +141,7 @@ public:
 					return 0;
 				}
 				else {
-					stop();
+					channel_stop();
 					locating_return_channel = 1;
 					return 1;
 				}
@@ -165,7 +166,7 @@ public:
 					return 1;
 				}
 				else {
-					stop();
+					channel_stop();
 					locating_return_channel=2;
 					return 2;
 				}
@@ -192,7 +193,7 @@ public:
 					return 2;
 				}
 				else {
-					stop();
+					channel_stop();
 					locating_return_channel = 3;
 					return 3;
 				}
@@ -220,12 +221,12 @@ public:
 					return 3;
 				}
 				if (cornersignal ==1) {
-					stop();
+					channel_stop();
 					locating_return_channel = 4;
 					return 4;
 				}
 				if (cornersignal ==2){
-					stop();
+					channel_stop();
 					locating_return_channel = 5;
 					return 5;
 				}
@@ -247,7 +248,7 @@ public:
 						return 4;
 					}
 					else {
-						stop();
+						channel_stop();
 						channel4_mode =1;            //change to channel4 mode 1
 						return 4;
 					}
@@ -273,7 +274,7 @@ public:
 						return 4;
 					}
 					else {
-						stop();
+						channel_stop();
 						channel4_mode = 0;
 						locating_return_channel = 6;
 						return 3;
@@ -297,7 +298,7 @@ public:
 						return 5;
 					}
 					else {
-						stop();
+						channel_stop();
 						channel5_mode = 1;
 						return 5;
 					}
@@ -316,7 +317,7 @@ public:
 						return 5;
 					}
 					else {
-						stop();
+						channel_stop();
 						channel5_mode = 2;
 						return 5;
 					}
@@ -335,7 +336,7 @@ public:
 						return 5;
 					}
 					else {
-						stop();
+						channel_stop();
 						channel5_mode = 3;
 						return 5;
 					}
@@ -361,7 +362,7 @@ public:
 						return 5;
 					}
 					else {
-						stop();
+						channel_stop();
 						channel5_mode = 0;
 						locating_return_channel = 6;
 						return 3;
@@ -456,7 +457,7 @@ public:
 		check_stuck_base_time = (unsigned long long)(tv.tv_sec)*1000 +
 			(unsigned long long)(stktv.tv_usec) / 1000;
 		integration = 0;
-		prerror = 0;
+		//prerror = 0;
 		float dt = timeDiff();
 	}
 	void setup_parallel_to_wall() {
@@ -469,12 +470,15 @@ public:
 	steps that used in the test
 	*/
 	int incorner(){   //0 for no corner, 1 for corner almost 90 degrees, 2 for corner almos
-		if (irf->getDistance()<=9.0) { return 1;}
+		if (irf->getDistance()<=small_corner_threshold_distance) { return 1;}
 		if (irlf->getDistance()==100) { 
 			if(cornercnt=0) {
 				cornercnt++;
 			} 
-			else { return 2;}
+			else { 
+				cornercnt = 0;
+				return 2;
+			}
 		}
 		cornercnt = 0;
 		return 0;
@@ -488,9 +492,7 @@ public:
 		return (f || b || lb || lf || r);
 	}
 	void parallelrun(){
-		float irlfd = irlf->getDistance();
-		float irlbd = irlb->getDistance();
-		float estimatedis = (irlfd+irlbd)*cos(fm_angle)/2;
+		float estimatedis = estimatedistance();
 		std::cout<<"running parallel wall"<<std::endl;
 		std::cout<<"distance from the wall:  "<<estimatedis<<std::endl;
 		float dt = timeDiff();
@@ -501,7 +503,7 @@ public:
 		float lspeed=base_speed+dspeed,rspeed=base_speed-dspeed;
 		left->setSpeed(lspeed);
 		right->setSpeed(rspeed);
-		prerror = error;
+		//prerror = error;
 		current = odo->run();
 	}
 	bool parallel_to_wall() {
