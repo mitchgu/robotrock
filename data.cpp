@@ -15,6 +15,16 @@ public:
 	int y() {
 		return _y;
 	}
+	bool operator<(Point other) {
+			if(_x==other._x) return _y<other._y;
+			return _x<other._x;
+	}
+	bool operator==(Point other) {
+		return ((x() == other.x())&&(y() == other.y()));
+	}
+	bool operator!=(Point other) {
+		return ((x() != other.x())||(y() != other.y()));
+	}
 	bool equalTo(Point* other) {
 		return ((x() == other->x())&&(y() == other->y()));
 	}
@@ -35,6 +45,12 @@ public:
 		_ye = ye;
 		wall_length = sqrt(pow((_xs-_xe),2.0)+pow((_ys-_ye),2.0));
 		wall_angle = atan(((float)(_xe-_xs))/(_ye-_ys));
+	}
+	Point s() {
+		return Point(_xs,_ys);
+	}
+	Point e() {
+		return Point(_xe,_ye);
 	}
 	float length() {
 		return wall_length;
