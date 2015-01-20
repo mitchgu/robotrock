@@ -37,45 +37,45 @@ class Mapdealer {
 		int cnt = 0;
 		std::string sub;
 		std::ifstream myfile (str);
-		if (myfile.is_open()) {
-			while ( getline( myfile, line ) ) {
-				if ((line[0] == 'W')|| line[0] =='P') {
-					for (int i=2; i<line.length(); i++) {
-						if (line[i] == ',') {
-							sub = line.substr(comma+1,i-comma);
-							if (cnt==0) {
-								xs = atoi( sub.c_str() );
-							}
-							if (cnt==1) {
-								ys = atoi( sub.c_str() );
-							}
-							if (cnt==2) {
-								xe = atoi( sub.c_str() );
-							}
-							cnt++;
-							comma = i;
-						}
-					}
-					sub = line.substr(comma+1,line.length()-comma);
-					ye = atoi( sub.c_str() );
-					cnt=0; comma = 1;
-					std::cout<<"wall: "<<xs<<" "<<ys<<" "<<xe<<" "<<ye<<std::endl;
-					Wall* wall = new Wall(xs,ys,xe,ye);
-					Point* starts = new Point(xs,ys);
-					Point* ends = new Point(xe,ye);
-					bool startin = point_is_in_dq(starts);
-					bool endin = point_is_in_dq(ends);
-					if (!startin) point_dq->push_back(starts);
-					if (!endin) point_dq->push_back(ends);
-					if (startin || endin) {
-						int i = thing_to_combine(wall);
-						std::cout<<"can combine:  "<<i<<std::endl;
-						if (i != -1) {
-							wall_dq->at(i) = wall_dq->at(i)->combine(wall);
-							std::cout<<"after combined: "<<wall_dq->at(i)->xs()<<" "<<wall_dq->at(i)->ys()<<" "<<wall_dq->at(i)->xe()<<" "<<wall_dq->at(i)->ye()<<std::endl;
-							int j=0; 
-							for (std::deque<Wall*>::iterator it = wall_dq->begin(); it!=wall_dq->end(); ++it) {
-								if (j!=i){
+  		if (myfile.is_open()) {
+    		while ( getline( myfile, line ) ) {
+    			if ((line[0] == 'W')|| line[0] =='P') {
+        			for (int i=2; i<line.length(); i++) {
+        				if (line[i] == ',') {
+            				sub = line.substr(comma+1,i-comma);
+            				if (cnt==0) {
+            					xs = 24*atoi( sub.c_str() );
+            				}
+            				if (cnt==1) {
+            					ys = 24*atoi( sub.c_str() );
+            				}
+            				if (cnt==2) {
+            					xe = 24*atoi( sub.c_str() );
+            				}
+            				cnt++;
+            				comma = i;
+          				}
+        			}
+        			sub = line.substr(comma+1,line.length()-comma);
+        			ye = 24*atoi( sub.c_str() );
+        			cnt=0; comma = 1;
+                    std::cout<<"wall: "<<xs<<" "<<ys<<" "<<xe<<" "<<ye<<std::endl;
+        			Wall* wall = new Wall(xs,ys,xe,ye);
+        			Point* starts = new Point(xs,ys);
+        			Point* ends = new Point(xe,ye);
+        			bool startin = point_is_in_dq(starts);
+        			bool endin = point_is_in_dq(ends);
+        			if (!startin) point_dq->push_back(starts);
+        			if (!endin) point_dq->push_back(ends);
+        			if (startin || endin) {
+        				int i = thing_to_combine(wall);
+                        std::cout<<"can combine:  "<<i<<std::endl;
+        				if (i != -1) {
+        					wall_dq->at(i) = wall_dq->at(i)->combine(wall);
+                            std::cout<<"after combined: "<<wall_dq->at(i)->xs()<<" "<<wall_dq->at(i)->ys()<<" "<<wall_dq->at(i)->xe()<<" "<<wall_dq->at(i)->ye()<<std::endl;
+        					int j=0; 
+        					for (std::deque<Wall*>::iterator it = wall_dq->begin(); it!=wall_dq->end(); ++it) {
+        						if (j!=i){
 									if (wall_dq->at(i)->can_combine(*it)) {
 										wall_dq->at(i) = wall_dq->at(i)->combine(wall_dq->at(j));
 										wall_dq->erase(wall_dq->begin()+j);

@@ -27,13 +27,9 @@ int main(){
 	bool localized = false;
 	while(running &&!localized) {
 		channel = wf->run_follower(channel);
-		lct->channel_switch(wf->locating_channel());
-		lct->data(wf->data());
-		localized = !lct->decision();
 	} 
 	Location* current = lct->get_location();
 }
 	
 	
 };
-
