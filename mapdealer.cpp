@@ -116,7 +116,7 @@ public:
     }
 };
 int main() {
-    Mapdealer* map = new Mapdealer("example.txt");
+    Mapdealer* map = new Mapdealer("example3.txt");
     std::deque<Point*>* point_dq = map->stack_of_point();
     std::deque<Wall*>* wall_dq = map->stack_of_wall();
     for (std::deque<Wall*>::iterator it = wall_dq->begin(); it!=wall_dq->end(); ++it) {
