@@ -20,16 +20,12 @@ int main(){
 	IR* irb = new IR(2);
 	IR* irlf = new IR(4);
 	IR* irlb = new IR(3);
-	wf = new Wallfollower(left,right,irlf,irlb,irr,irf,irb,location);
-	Locating* lct = new Locating();
-	lct->setup_startpoint;
+	Wallfollower* wf= new Wallfollower(left,right,irlf,irlb,irr,irf,irb,location);
 	int channel=1;
 	bool localized = false;
 	while(running &&!localized) {
 		channel = wf->run_follower(channel);
 	} 
-	Location* current = lct->get_location();
-}
 	
 	
 };
