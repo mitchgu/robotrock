@@ -22,7 +22,7 @@ class Wallfollower {
 	IR* irlb;
 	IR* irr;
 	IR* irf;
-	IR* irb;
+	//IR* irb;
 	Motor* left;
 	Motor* right;
 	Odometry* odo;
@@ -70,14 +70,14 @@ class Wallfollower {
 			return msl-ms;
 	}
 public:
-	Wallfollower(Motor* _l, Motor* _r, IR* _irlf, IR* _irlb, IR* _irr,IR* _irf,IR* _irb, Location* _start) {
+	Wallfollower(Motor* _l, Motor* _r, IR* _irlf, IR* _irlb, IR* _irr,IR* _irf,Location* _start) {
 		left = _l;
 		right = _r;
 		irlf = _irlf;
 		irlb = _irlb;
 		irr = _irr;
 		irf = _irf;
-		irb = _irb;
+		//irb = _irb;
 		start = _start;
 		current = _start;
 		odo = new Odometry(_l, _r, _start->x(),_start->y(),_start->theta());
@@ -102,6 +102,7 @@ public:
 	return 5 return large angle turning point
 	return 6 return after corner point
 	*/
+
 	int locating_channel() {
 		if (locating_return_channel == 0) {
 			return 0;
@@ -125,7 +126,7 @@ public:
 
 	int run_follower(int channel) {
 		mode = channel;
-		if (channel == 0) {               //problem dealer, when you are stuck in a bad thing
+		if (channel == 0) { /*              //problem dealer, when you are stuck in a bad thing
 			std::cout<<"channel 0: I meat a problem "<<std::endl;
 			if(!initialized) {
 				setup_smoothrotate(10);
@@ -146,7 +147,8 @@ public:
 					locating_return_channel = 1;
 					return 1;
 				}
-			}
+			}*/
+			return 1;
 		}
 		if (channel == 1) {               //step1 : move forward, until you see the wall
 			std::cout<<"channel 1: move forward to the wall "<<std::endl;
@@ -511,7 +513,7 @@ public:
 		current = odo->run();
 	}
 	bool parallel_to_wall() {
-		gettimeofday(&tv, NULL);
+		gettimeofday(&stktv, NULL);
 		std::cout<<"cnt:"<<cnt<<std::endl;
 		current = odo->run();
 		usleep(10000);
@@ -569,6 +571,7 @@ public:
 			return false;
 		}
 	}
+	/*
 	void setup_back_facing_wall() {
 		bcntdec = 0, bcnt = 0, bdet = false;
 		prebdis = irb->getDistance();
@@ -609,6 +612,7 @@ public:
 		return false;
 	}
 };
+*/
 
 
 

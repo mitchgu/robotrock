@@ -26,6 +26,7 @@ int main(){
 	while(running &&!localized) {
 		channel = wf->run_follower(channel);
 	} 
-	
-	
+	left->stop();
+	right->stop();
+	sleep(1);	
 };
