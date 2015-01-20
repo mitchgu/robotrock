@@ -1,7 +1,8 @@
 #include "motion.cpp"
 #include <iostream>
 #include "shortIR.cpp"
-const float Kpw = 0.3, Kdw = 1, Kiw = 0.0002;
+//const float Kpw = 0.3, Kdw = 1, Kiw = 0.0002;
+const float K1 = 5, K2 = 3, K3 = 2;
 const float threshelddis = 5.0; //for the first approaching to wall
 const float fm_angle = 0.3;   //
 const float base_speed = 20;
@@ -20,7 +21,7 @@ const float small_corner_threshold_distance=9.0;
 class Wallfollower {
 	IR* irlf;
 	IR* irlb;
-	IR* irr;
+	IR* irlm;
 	IR* irf;
 	//IR* irb;
 	Motor* left;
@@ -37,7 +38,7 @@ class Wallfollower {
 	bool det; bool cw; bool forw; int cnt;int cntdec; //only for setAngle
 	unsigned long long backward_base_time; struct timeval btv; bool bdet; int bcnt; int bcntdec; float prebdis; // only for facing air
 	unsigned long long check_stuck_base_time; struct timeval stktv;
-	float integration, prerror; //only for parallelrun
+	float predif, prerror; //only for parallelrun
 	int cornercnt; // only for cornercnt
 	struct timeval tv;
 
@@ -70,12 +71,12 @@ class Wallfollower {
 			return msl-ms;
 	}
 public:
-	Wallfollower(Motor* _l, Motor* _r, IR* _irlf, IR* _irlb, IR* _irr,IR* _irf,Location* _start) {
+	Wallfollower(Motor* _l, Motor* _r, IR* _irlf, IR* _irlb, IR* _irlm,IR* _irf,Location* _start) {
 		left = _l;
 		right = _r;
 		irlf = _irlf;
 		irlb = _irlb;
-		irr = _irr;
+		irlm = _irlm;
 		irf = _irf;
 		//irb = _irb;
 		start = _start;
@@ -467,10 +468,10 @@ public:
 	void setup_parallelrun() {
 		check_stuck_base_time = (unsigned long long)(stktv.tv_sec)*1000 +
 			(unsigned long long)(stktv.tv_usec) / 1000;
-		integration = 0;
+		prerror = 0;
+		predif = 0
 		left->forward();
 		right->forward();
-		prerror = 0;
 		float dt = timeDiff();
 	}
 	void setup_parallel_to_wall() {
@@ -505,19 +506,15 @@ public:
 		return (f  || lb || lf || r);
 	}
 	void parallelrun(){
-		float estimatedis = estimatedistance();
-		std::cout<<"running parallel wall"<<std::endl;
-		std::cout<<"distance from the wall:  "<<estimatedis<<"  front sensor:  " << irlf->getDistance()<<std::endl;
 		float dt = timeDiff();
-		float error = target - estimatedis;
+		float error = target-irlm->getDistance();
 		float dif = (error-prerror)/dt;
-		integration = integration + error*dt;
-		float dspeed = error*Kpw+dif*Kdw+integration*Kiw;
-		float lspeed=base_speed+dspeed,rspeed=base_speed-dspeed;
-		std::cout<<"leftspeed:  "<< lspeed<<"  rightspeed:  "<<rspeed<<std::endl;
-		left->setSpeed(lspeed);
-		right->setSpeed(rspeed);
+		float ddif = (predif-dif)/dt;
+		float dspeed = error*K1+dif*K2+ddif*K3;
+		left->setSpeed(base_speed+dspeed);
+		right->setSpeed(base_speed-dspeed);
 		prerror = error;
+		predif = dif;
 		current = odo->run();
 	}
 	bool parallel_to_wall() {
