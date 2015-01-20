@@ -7,7 +7,6 @@
 #include <signal.h>
 #include <math.h>
 
-#include "gyro.cpp"
 #include "odometry.cpp"
 
 const double Kp=20, Ki=6, Kd=8;
@@ -83,9 +82,9 @@ protected:
 			double baseSpeed=40;
 			l->setSpeed(baseSpeed+diff);
 			r->setSpeed(baseSpeed-diff);
-			float _speed = ((l->rps()+r->rps())/2)*12.095;
-			moveDistance = moveDistance-td*_speed/1000;
-			return false;
+			std::cout<<l->rpsi()<<" left,right "<<r->rpsi()<<std::endl;
+			//float _speed = ((l->rps()+r->rps())/2)*12.095;
+			//moveDistance = moveDistance-td*_speed/1000; return false;
 	}
 public:
 	Motion( Motor* _l, Motor* _r,Odometry* _odo, Location* _start) 

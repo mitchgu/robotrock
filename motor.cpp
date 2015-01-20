@@ -9,6 +9,27 @@
 #include "data.cpp"
 #include "i2c.cpp"
 
+struct timeval start,end;
+
+double dt;
+
+void edge_handler(void* args)
+{
+	mraa::Gpio* hall=(mraa::Gpio*) args;
+	if(hall->read()) //rising
+	{
+		std::cout<<"rising"<<std::endl;
+		gettimeofday(&start, NULL);
+	}
+	else
+	{
+		std::cout<<"falling"<<std::endl;
+		gettimeofday(&end, NULL);
+		int diffSec = end.tv_sec - start.tv_sec;
+		int diffUSec = end.tv_usec - start.tv_usec;
+		dt = (double)diffSec + 0.000001*diffUSec;
+	}
+}
 
 class Motor
 {
@@ -127,6 +148,13 @@ public:
 		std::cout<<ms<<" "<<std::endl;
 		float msf = (float)ms;
 		return 5.0072*((1/((msf/5000)*2))/1920)-0.0157;
+	}
+	double rpsi() 
+	{
+		hall->isr(mraa::EDGE_BOTH, edge_handler, hall);
+		usleep(1000);
+		hall->isrExit();
+		return dt;
 	}
 };
 

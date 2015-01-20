@@ -31,7 +31,7 @@ public:
 		writeBuf[3] = (sensorRead >> 24) & 0xff;
 		total=0, init=false;
 	}
-	void reset(_theta)
+	void reset(int _theta)
 	{
 		total=_theta;
 	}

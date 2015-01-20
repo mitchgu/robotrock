@@ -5,7 +5,6 @@
 
 #define SHIELD_I2C_ADDR 0x40
 
-int running = 1;
 #define MS 1000
 
 uint8_t registers[] = {
@@ -28,13 +27,6 @@ uint8_t registers[] = {
 };
   
 
-void sig_handler(int signo)
-{
-  if (signo == SIGINT) {
-    printf("closing spi nicely\n");
-    running = 0;
-  }
-}
 
 void initPWM(mraa::I2c *i2c) {
   uint8_t writeBuf[2] = {0};
