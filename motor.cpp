@@ -9,26 +9,25 @@
 #include "data.cpp"
 #include "i2c.cpp"
 
+#define MX 10
+
 struct timeval start,end;
 
 double dt;
+int count;
 
 void edge_handler(void* args)
 {
-	mraa::Gpio* hall=(mraa::Gpio*) args;
-	if(hall->read()) //rising
+	//std::cout<<"falling"<<std::endl;
+	if(count==0) gettimeofday(&start, NULL);
+	if(count==MX)
 	{
-		std::cout<<"rising"<<std::endl;
-		gettimeofday(&start, NULL);
-	}
-	else
-	{
-		std::cout<<"falling"<<std::endl;
 		gettimeofday(&end, NULL);
 		int diffSec = end.tv_sec - start.tv_sec;
 		int diffUSec = end.tv_usec - start.tv_usec;
 		dt = (double)diffSec + 0.000001*diffUSec;
 	}
+	count++;
 }
 
 class Motor
@@ -114,47 +113,14 @@ public:
 	*/
 	double rps()
 	{
-		if(volt<0.02) return 0;
-		struct timeval tv;
-		int reading = hall->read();
-		int its=0;
-		while(reading == hall->read()&&its<500)
-		{
-			usleep(10);
-			its++;
-		}
+		hall->isr(mraa::EDGE_RISING, edge_handler, hall);
+		count=0; int its=0;
+		while(count<=MX&&(++its)<500) usleep(100);
 		if(its==500) return 0;
-		gettimeofday(&tv,NULL);
-		unsigned long long ms = (unsigned long long)(tv.tv_sec)*1000 +
-						(unsigned long long)(tv.tv_usec) / 1000;
-		int count=0;
-		reading = hall->read();
-		while(count<=5) 
-		{
-			its++;
-			if (reading != hall->read())
-			{
-				count++;
-				reading = hall->read();
-				its=0;
-			}
-			if(its==500) return 0;
-			usleep(10);
-		}
-		gettimeofday(&tv,NULL);
-		unsigned long long msl = (unsigned long long)(tv.tv_sec)*1000 +
-						(unsigned long long)(tv.tv_usec) / 1000;
-		ms = msl - ms;
-		std::cout<<ms<<" "<<std::endl;
-		float msf = (float)ms;
-		return 5.0072*((1/((msf/5000)*2))/1920)-0.0157;
-	}
-	double rpsi() 
-	{
-		hall->isr(mraa::EDGE_BOTH, edge_handler, hall);
-		usleep(1000);
 		hall->isrExit();
-		return dt;
+		//std::cout<<"delay "<<dt<<std::endl;
+		double out=4*MX/(1920.0*dt);
+		return out;
 	}
 };
 
