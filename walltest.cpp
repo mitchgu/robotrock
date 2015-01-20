@@ -29,4 +29,6 @@ int main(){
 	left->stop();
 	right->stop();
 	sleep(1);	
-};
+	return 0;
+}
+

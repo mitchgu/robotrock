@@ -1,8 +1,8 @@
 #include "motion.cpp"
 #include <iostream>
 #include "shortIR.cpp"
-const float Kpw = 3, Kdw = 3, Kiw = 2;
-const float threshelddis = 9.0; //for the first approaching to wall
+const float Kpw = 0.3, Kdw = 1, Kiw = 0.01;
+const float threshelddis = 8.0; //for the first approaching to wall
 const float fm_angle = 0.3;   //
 const float base_speed = 15;
 const float slp=0.7;
@@ -153,7 +153,7 @@ public:
 		if (channel == 1) {               //step1 : move forward, until you see the wall
 			std::cout<<"channel 1: move forward to the wall "<<std::endl;
 			if(!initialized){
-				setup_smoothforward(10);
+				setup_smoothforward(15);
 				initialized = true;
 				return 1;
 			}
@@ -182,7 +182,7 @@ public:
 		if(channel == 2) {                      //step2 : parallel to wall
 			std::cout<<"channel 2: parallel to wall! "<<std::endl;
 			if (!initialized) {
-				setup_smoothrotate(10);
+				setup_smoothrotate(15);
 				setup_parallel_to_wall();
 				initialized = true;
 				return 2;
@@ -264,7 +264,7 @@ public:
 				std::cout<<"small angle corner parallel to wall! "<<std::endl;
 				if (!initialized) {
 					setup_parallel_to_wall();
-					setup_smoothrotate(-10);
+					setup_smoothrotate(-15);
 					initialized = true;
 					return 4;
 				}
@@ -352,7 +352,7 @@ public:
 				std::cout<<"big angle corner go parallel to the wall! "<<std::endl;
 				if (!initialized) {
 					setup_parallel_to_wall();
-					setup_smoothrotate(10);
+					setup_smoothrotate(15);
 					initialized = true;
 					return 5;
 				}
@@ -491,11 +491,11 @@ public:
 	}
 	bool close_to_wall(){
 		bool f = (irf->getDistance())<threshelddis;
-		bool b = (irb->getDistance())<threshelddis;
+		//bool b = (irb->getDistance())<threshelddis;
 		bool lb = (irlb->getDistance())<threshelddis;
 		bool lf = (irlf->getDistance())<threshelddis;
 		bool r = (irr->getDistance())<threshelddis;
-		return (f || b || lb || lf || r);
+		return (f  || lb || lf || r);
 	}
 	void parallelrun(){
 		float estimatedis = estimatedistance();
@@ -526,16 +526,20 @@ public:
 		}
 		if (cw) {
 			std::cout<<"paralleling clockwise"<<std::endl;
-			if(irlb>irlf) {
+			if(lbdis>lfdis) {
 				cnt=0;   
-				if(cntdec<5) cntdec++;
+				if(cntdec<3) {
+					cntdec++;
+					std::cout<< "countdecrement:  "<<cntdec<<std::endl;
+				}
 				else {
 					std::cout<<"detection mode"<<std::endl;
+					std::cout<< "countdec:  "<<cntdec<<std::endl;
 					det = true;
 				}
 			}
 			else {
-				if(cntdec<5) cntdec = 0;
+				cntdec = 0;
 				if (!det) return false;
 				else {
 					if (cnt>0) 	{
@@ -549,7 +553,7 @@ public:
 		}
 		else {
 			std::cout<<"paralleling counterclockwise"<<std::endl;
-			if(irlb<irlf) {
+			if(lbdis<lfdis) {
 				cnt=0;   
 				if(cntdec<5) cntdec++;
 				else {
@@ -558,7 +562,7 @@ public:
 				}
 			}
 			else {
-				if(cntdec<5) cntdec = 0;
+				cntdec = 0;
 				if (!det) return false;
 				else {
 					if (cnt>0)	{
@@ -571,6 +575,7 @@ public:
 			return false;
 		}
 	}
+};
 	/*
 	void setup_back_facing_wall() {
 		bcntdec = 0, bcnt = 0, bdet = false;
