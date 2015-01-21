@@ -11,7 +11,6 @@
 #define mp std::make_pair
 #define pb push_back
 
-#include "cv"
 
 using namespace cv;
 
@@ -19,6 +18,32 @@ const double distA=6.8327;
 const double distB=0.0062;
 const int distR=240;
 const int distC=320;
+
+double brx=6.3,bry=16,sq=4;
+
+void maxFilter(Mat& frame, int ind, double multA=1.22, double multB=1.5)
+{
+	bool Y=false;
+	if(ind!=0) multA=multB=1.3;
+	if(ind==3) Y=true,ind=1,multA=0.8,1.12;
+	REP(i,frame.rows)
+	{
+		REP(j,frame.cols)
+		{
+			Vec3b& cur =frame.at<Vec3b>(i,j);
+			if(cur[ind]>60&&cur[ind]>multA*cur[(ind+1)%3]&&cur[ind]>multB*cur[(ind+2)%3])  
+			{
+				cur[ind]=255;
+				cur[(ind+1)%3]=Y?255:0;
+				cur[(ind+2)%3]=0;
+			}
+			else 
+			{
+				cur[ind]=cur[(ind+1)%3]=cur[(ind+2)%3]=0;
+			}
+		}
+	}
+}
 
 int** comp; std::vector<std::pair<double,double> > cents; int currentComp;
 int dimR, dimC, toti, totj;
@@ -43,7 +68,7 @@ int dfs(int i, int j, Mat &inFrame)
 	int ar=1;
 	toti+=i, totj+=j;
 	comp[i][j]=currentComp;
-	inFrame[i][j].at<Vec3b>(i,j)[1]=255;
+	inFrame.at<Vec3b>(i,j)[1]=255;
 	REP(k,4)
 	{
 		int ni=i+dx[k],nj=j+dy[k];
@@ -71,8 +96,9 @@ void fill(Mat &inFrame)
 		int ar=dfs(i,j,inFrame);
 		int ci=toti/((double)ar);
 		int cj=totj/((double)ar);
-		if(ar>=1000) 
+		if(ar>=175&&ar<=3000&&ci>60)
 		{
+			std::cout<<ci<<" "<<cj<<std::endl;
 			cents.pb(mp(ci,cj));
 			REP(x,5) REP(y,5) 
 			{
@@ -86,7 +112,6 @@ void fill(Mat &inFrame)
 		}
 		currentComp++;
 	}
-	return ret;
 }
 
 int main(int argc, char** argv)

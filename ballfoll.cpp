@@ -26,12 +26,12 @@ void sig_handler(int signo)
 int main()
 {
 	signal(SIGINT,sig_handler);
-	Motor* left = new Motor(8,6,4,false);
-	Motor* right = new Motor(9,5,2,true);
-	Gyroscope* gyr = new Gyroscope(10);
+	Motor* left = new Motor(0,2,4,false);
+	Motor* right = new Motor(4,6,2,true);
+	Odometry* odo = new Odometry(left, right, 0, 0, 0);
 	Location* location = new Location(0.0,0.0,0.0);
 
-	Motion* motion = new Motion(left,right,gyr,location); 
+	Motion* motion = new Motion(left,right,odo,location); 
 	//motion->rotate(1.57);	
 	const float K=10;
 	float target;
@@ -52,7 +52,7 @@ int main()
 
 		Mat out;
 		maxFilter(frame,2);
-		target=fill(frame,2)/3;
+		target=fill(frame,2);
 
 		if(target!=0&&fabs(target)>5)
 		{

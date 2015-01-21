@@ -1,4 +1,5 @@
 #include <cassert>
+#include <fstream>
 #include <math.h>
 #include <utility>
 #include <vector>
@@ -17,8 +18,31 @@ const double distA=6.8327;
 const double distB=0.0062;
 const int distR=240;
 const int distC=320;
+typedef std::pair<double,double> pdd;
+typedef std::pair<int,int> pii;
 
-std::pair<double, double> getDist(int i, int j)
+pdd getDist(int gi, int gj)
+{
+	std::ifstream file("out.txt");
+	int x,y; double i,j;
+	double minMatch=1e9;
+	double oi,oj;
+	while(!file.eof())
+	{
+		file>>x>>y;
+		file>>i>>j;
+		//std::cout<<x<<" "<<y<<" "<<i<<" "<<j<<std::endl;
+		double dist=(x-gi)*(x-gi)+(y-gj)*(y-gj);
+		if(dist<minMatch)
+		{
+			minMatch=dist;
+			oi=i,oj=j;
+		}
+	}
+	file.close();
+	return mp(std::sqrt(oi*oi+oj*oj),std::atan2(oi,oj));
+}
+pdd getOldDist(int i, int j)
 {
 	i=distR-i;
 	j=j-(distC/2);
