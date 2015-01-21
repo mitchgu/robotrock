@@ -10,7 +10,7 @@
 #include "odometry.cpp"
 
 //const double Kp=0.5, Ki=0.15, Kd=0.2;
-const double Kp=0.65, Ki=0, Kd=0;
+const double Kp=0.8, Ki=0, Kd=0.2;
 const double mKp=0.05, mKi=0.01, mKd=0.005;
 
 class Motion
@@ -81,7 +81,8 @@ protected:
 		intError+=td*error/1000;
 		double diffError=(error-prevError)/(td);
 		double diff = (error*mKp+intError*mKi+diffError*mKd);
-		diff=0;
+		//diff=0;
+		std::cout<<"diff is: "<<diff<<std::endl;
 		l->setTarget(baseSpeed+diff);
 		r->setTarget(baseSpeed-diff);
 		l->run(); r->run();

@@ -19,6 +19,12 @@ int count;
 //const double sKp=0.04, sKi=0.000005, sKd=0.0005;
 double sKp=0.15, sKi=0.000000, sKd=0.0000;
 
+void tickCounter(void* args)
+{
+	//std::cout<<"falling"<<std::endl;
+	count++;
+}
+
 void edge_handler(void* args)
 {
 	//std::cout<<"falling"<<std::endl;
@@ -116,16 +122,30 @@ public:
 	void setSpeed(double set)
 	{
 		targetRPS=set;
-		writeVolt(0.010624*set/(3.14*3.85)+0.01136);
+		writeVolt(0.010624*set*(3.14*3.85)+0.01136);
 	}
 	float getSpeed() { return targetRPS; }
 	/*
 	get the real speed
 	*/
+	void turnTicks(int ticks, double speed)
+	{
+		count=0;
+		setSpeed(speed);
+		hall->isr(mraa::EDGE_RISING, edge_handler, hall);
+		while(count<=ticks) usleep(100);
+		hall->isrExit();
+		stop();
+	}
+	void turnAngle(int angle, double speed)
+	{
+		int ticks=(angle/360.0)*480.0;
+		turnTicks(ticks,speed);
+	}
 	double rps()
 	{
-		hall->isr(mraa::EDGE_RISING, edge_handler, hall);
 		count=0; int its=0;
+		hall->isr(mraa::EDGE_RISING, edge_handler, hall);
 		while(count<=MX&&(++its)<500) usleep(100);
 		if(its==500) return 0;
 		hall->isrExit();
