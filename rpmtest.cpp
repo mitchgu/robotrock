@@ -22,12 +22,13 @@ int main()
 	//motion->rotate(1.57);	
 	left->forward();
 	right->forward();
-	left->setSpeed(4);
-	right->setSpeed(4);
+	left->setSpeed(1);
+	right->setSpeed(1);
 	while(running)
 	{
+		left->run();right->run();
 		std::cout<<"left "<<left->rps()<<" right "<<right->rps()<<std::endl;
-		sleep(1);
+		usleep(1000);
 	}
 	left->stop(); right->stop();
 	sleep(1);
