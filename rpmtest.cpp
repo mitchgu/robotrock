@@ -19,18 +19,16 @@ int main()
 	Odometry* odo = new Odometry(left, right, 0, 0, 0);
 	Location* location = new Location(0.0,0.0,0.0);
 
-	Motion* motion = new Motion(left,right,odo,location); 
 	//motion->rotate(1.57);	
-	motion->straight(8);
-	
-	for(int s=0;s<4;s++)
+	left->forward();
+	right->forward();
+	left->setSpeed(1);
+	right->setSpeed(1);
+	while(running)
 	{
-		motion->straight(24);
-		while(running&&!motion->run()) usleep(10000);
-		sleep(0.1);
-		motion->rotate(1.57);
-		while(running&&!motion->run()) usleep(10000);
-		sleep(0.1);
+		left->run();right->run();
+		std::cout<<"left "<<left->rps()<<" right "<<right->rps()<<std::endl;
+		usleep(1000);
 	}
 	left->stop(); right->stop();
 	sleep(1);

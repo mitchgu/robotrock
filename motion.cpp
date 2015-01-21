@@ -7,11 +7,11 @@
 #include <signal.h>
 #include <math.h>
 
-#include "gyro.cpp"
 #include "odometry.cpp"
 
-const double Kp=20, Ki=6, Kd=8;
-const double mKp=2, mKi=0.5, mKd=0.2;
+//const double Kp=0.5, Ki=0.15, Kd=0.2;
+const double Kp=0.65, Ki=0, Kd=0;
+const double mKp=0.05, mKi=0.01, mKd=0.005;
 
 class Motion
 {
@@ -20,6 +20,7 @@ protected:
 	Odometry* odo;
 	Location* current;
 	double currentAngle;
+	double baseSpeed;
 	double targetAngle,moveDistance;
 	double intError,prevError;
 	struct timeval tv;
@@ -52,40 +53,41 @@ protected:
 			long long td=timeDiff();
 			if(fabs(error)<0.02)
 			{ 
-				std::cout<<"TURNT!\n";
+				//std::cout<<"TURNT!\n";
 				l->stop(); r->stop();
-				std::cout<<"setting error "<<error<<std::endl;
+				//std::cout<<"setting error "<<error<<std::endl;
 				return true;
 			} //change with move pid later
 			intError+=td*error/1000;
 			double diffError=(error-prevError)/(td);
 			double speed = (error*Kp+intError*Ki+diffError*Kd);
-			std::cout<<"setting error "<<error<<std::endl;
-			std::cout<<"setting speed "<<speed<<std::endl;
+			//std::cout<<"setting error "<<error<<std::endl;
+			//std::cout<<"setting speed "<<speed<<std::endl;
 			if(speed>0) cw();
 			else { ccw(); speed=-speed;}
-			l->setSpeed(speed); r->setSpeed(speed);
+			l->setTarget(speed); r->setTarget(speed);
+			l->run(); r->run();
 			return false;
 	}
 	bool movPID()
 	{
 		std::cout<<"moving"<<std::endl;
-			current = odo->run();
-			currentAngle=odo->getAngle();
-			long long td=timeDiff();
+		current = odo->run();
+		currentAngle=odo->getAngle();
+		long long td=timeDiff();
+		if(moveDistance<0.01) { l->stop(); r->stop(); return true;} //change with move pid later
 
-			if(moveDistance<0.01) { l->stop(); r->stop(); return true;} //change with move pid later
-
-			double error=(targetAngle-currentAngle);
-			intError+=td*error/1000;
-			double diffError=(error-prevError)/(td);
-			double diff = (error*mKp+intError*mKi+diffError*mKd);
-			double baseSpeed=40;
-			l->setSpeed(baseSpeed+diff);
-			r->setSpeed(baseSpeed-diff);
-			float _speed = ((l->rps()+r->rps())/2)*12.095;
-			moveDistance = moveDistance-td*_speed/1000;
-			return false;
+		double error=(targetAngle-currentAngle);
+		intError+=td*error/1000;
+		double diffError=(error-prevError)/(td);
+		double diff = (error*mKp+intError*mKi+diffError*mKd);
+		diff=0;
+		l->setTarget(baseSpeed+diff);
+		r->setTarget(baseSpeed-diff);
+		l->run(); r->run();
+	//	std::cout<<l->rpsi()<<" left,right "<<r->rpsi()<<std::endl;
+		float _speed = ((l->rps()+r->rps())/2)*12.095;
+		moveDistance = moveDistance-td*_speed/1000; return false;
 	}
 public:
 	Motion( Motor* _l, Motor* _r,Odometry* _odo, Location* _start) 
@@ -97,6 +99,7 @@ public:
 		targetAngle=currentAngle = _start->theta();
 		intError=moveDistance=0;
 		rotating=false;
+		baseSpeed=1;
 	}
 	bool run()
 	{
@@ -130,6 +133,8 @@ public:
 		intError=0,prevError=0;
 		current = odo->run();
 		currentAngle=targetAngle = odo->getAngle();
+		l->setSpeed(baseSpeed);
+		r->setSpeed(baseSpeed);
 	}
 	Location* getLocation() {
 		return current;

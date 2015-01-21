@@ -9,17 +9,48 @@
 #include "data.cpp"
 #include "i2c.cpp"
 
+#define MX 10
+
+struct timeval start,end;
+
+double dt;
+int count;
+
+//const double sKp=0.04, sKi=0.000005, sKd=0.0005;
+double sKp=0.15, sKi=0.000000, sKd=0.0000;
+
+void edge_handler(void* args)
+{
+	//std::cout<<"falling"<<std::endl;
+	if(count==0) gettimeofday(&start, NULL);
+	if(count==MX)
+	{
+		gettimeofday(&end, NULL);
+		int diffSec = end.tv_sec - start.tv_sec;
+		int diffUSec = end.tv_usec - start.tv_usec;
+		dt = (double)diffSec + 0.000001*diffUSec;
+	}
+	count++;
+}
 
 class Motor
 {
 	mraa::I2c* i2c;
-	int dpin;
-	//mraa::Gpio* dir;
-	int ppin;
+	int dpin, ppin;
 	mraa::Gpio* hall;
 	bool side; //0 -left or 1-right
-	double speed,volt;
+	double targetRPS,integ,volt;
 	bool forw;
+	struct timeval tv;
+	long long timeDiff()
+	{
+			unsigned long long ms = (unsigned long long)(tv.tv_sec)*1000 +
+				(unsigned long long)(tv.tv_usec) / 1000;
+			gettimeofday(&tv, NULL);
+			unsigned long long msl = (unsigned long long)(tv.tv_sec)*1000 +
+				(unsigned long long)(tv.tv_usec) / 1000;
+			return msl-ms;
+	}
 public:
 	Motor(int _dpin, int _ppin, int _hpin, bool _side)
 	{
@@ -32,7 +63,8 @@ public:
 		hall= new mraa::Gpio(_hpin);
 		hall->dir(mraa::DIR_IN);
 		side=_side;
-		speed=0;
+		targetRPS=volt=integ=0;
+		gettimeofday(&tv, NULL);
 	}	
 	void forward()
 	{
@@ -56,77 +88,50 @@ public:
 	}
 	void stop() 
 	{
-		volt=speed=0;
+		volt=targetRPS=0;
 		writePWM(i2c, ppin, 0);
+	}
+	void writeVolt(double _volt)
+	{
+		volt=_volt;
+		volt=std::min(1.0,volt);
+		volt=std::max(0.0,volt);
+		//std::cout<<"volt writing "<<volt<<std::endl;
+		writePWM(i2c, ppin, volt);
+	}
+	void run()
+	{
+		double dt=timeDiff();
+		double e=targetRPS-rps();
+		//std::cout<<"error is"<<e<<std::endl;
+		double deriv=e/dt;
+		integ+=e*dt;
+		double dx=sKp*e+sKi*integ+sKd*deriv;
+		writeVolt(volt+dx);
+	}
+	void setTarget(double inc)
+	{
+		targetRPS=inc;
 	}
 	void setSpeed(double set)
 	{
-		std::cout<<"i want to set the speed! :D"<<std::endl;
-			
-		float _set = set;
-	/*	if (_set<0) {
-			_set = -_set;
-			if (forw && side) {
-				writePWM(i2c, dpin, 1);
-			}
-			if (forw && !side) {
-				writePWM(i2c, dpin, 0);
-			}
-			if (!forw && side) {
-				writePWM(i2c, dpin, 0);
-			}
-			if (!forw && !side) {
-				writePWM(i2c, dpin, 1);
-			}
-		}*/
-		std::cout<<"speed:  "<<_set<<std::endl;
-		volt=0.010624*_set+0.01136;
-		speed=_set;
-		volt=std::min(1.0,volt);
-		volt=std::max(0.0,volt);
-		writePWM(i2c, ppin, volt);
+		targetRPS=set;
+		writeVolt(0.010624*set/(3.14*3.85)+0.01136);
 	}
-	float getSpeed() { return speed; }
-
+	float getSpeed() { return targetRPS; }
 	/*
 	get the real speed
 	*/
 	double rps()
 	{
-		if(volt<0.02) return 0;
-		struct timeval tv;
-		int reading = hall->read();
-		int its=0;
-		while(reading == hall->read()&&its<500)
-		{
-			usleep(10);
-			its++;
-		}
+		hall->isr(mraa::EDGE_RISING, edge_handler, hall);
+		count=0; int its=0;
+		while(count<=MX&&(++its)<500) usleep(100);
 		if(its==500) return 0;
-		gettimeofday(&tv,NULL);
-		unsigned long long ms = (unsigned long long)(tv.tv_sec)*1000 +
-						(unsigned long long)(tv.tv_usec) / 1000;
-		int count=0;
-		reading = hall->read();
-		while(count<=5) 
-		{
-			its++;
-			if (reading != hall->read())
-			{
-				count++;
-				reading = hall->read();
-				its=0;
-			}
-			if(its==500) return 0;
-			usleep(10);
-		}
-		gettimeofday(&tv,NULL);
-		unsigned long long msl = (unsigned long long)(tv.tv_sec)*1000 +
-						(unsigned long long)(tv.tv_usec) / 1000;
-		ms = msl - ms;
-		std::cout<<ms<<" "<<std::endl;
-		float msf = (float)ms;
-		return 5.0072*((1/((msf/5000)*2))/1920)-0.0157;
+		hall->isrExit();
+		//std::cout<<"delay "<<dt<<std::endl;
+		double out=4*MX/(1920.0*dt);
+		return out;
 	}
 };
 
