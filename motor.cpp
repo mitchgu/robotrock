@@ -102,7 +102,7 @@ public:
 		volt=_volt;
 		volt=std::min(1.0,volt);
 		volt=std::max(0.0,volt);
-		//std::cout<<"volt writing "<<volt<<std::endl;
+		std::cout<<"volt writing "<<volt<<std::endl;
 		writePWM(i2c, ppin, volt);
 	}
 	void run()

@@ -86,8 +86,8 @@ protected:
 		l->setTarget(baseSpeed+diff);
 		r->setTarget(baseSpeed-diff);
 		l->run(); r->run();
-	//	std::cout<<l->rpsi()<<" left,right "<<r->rpsi()<<std::endl;
-		float _speed = ((l->rps()+r->rps())/2)*12.095;
+		float _speed = ((l->rps()+r->rps())/2)i*12.095;
+		std::cout<<_speed<<" speed "<<std::endl;
 		moveDistance = moveDistance-td*_speed/1000; return false;
 	}
 public:
