@@ -16,11 +16,11 @@ int main(){
 	Motor* right = new Motor(4,6,2,true);
 	Location* location = new Location(0.0,0.0,0.0);
 	IR* irf = new IR(0);
-	IR* irlm = new IR(1);
-	//IR* irb = new IR(2);
+	IR* irr = new IR(1);
 	IR* irlf = new IR(3);
 	IR* irlb = new IR(2);
-	Wallfollower* wf= new Wallfollower(left,right,irlf,irlb,irlm,irf,location);
+	mraa::Gpio* uirb = new mraa::Gpio(8);
+	Wallfollower* wf= new Wallfollower(left,right,irf,irr,irlf,irlb,uirb,location);
 	int channel=1;
 	bool localized = false;
 	while(running &&!localized) {

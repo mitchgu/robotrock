@@ -3,11 +3,12 @@
 #include "shortIR.cpp"
 const float Kpw = 0.3, Kdw = 1, Kiw = 0.01;
 const float threshelddis = 8.0; //for the first approaching to wall
-const float fm_angle = 0.3;   //
-const float base_speed = 15;
+const float distance_of_irlfb = 2.0;
+const float big_corner_turn_omega = 1.5;
+const float base_speed = 15; //parallel run base speed
 const float slp=0.7;
 const float big_corner_straight_distance=22;
-const float distance_to_wall=10;
+const float distance_to_wall=8.0;
 const float small_corner_rotate_angle=1.9;
 const float big_corner_rotate_angle= -1.9;
 const float robotwidth =13;
@@ -15,13 +16,14 @@ const float rotate_stuck_time = 10;
 const float parallel_run_stuck_time = 15;
 const float forward_stuck_time = 15;
 const float small_corner_threshold_distance=9.0;
-
+const float big_corner_constant = 0.7;
 
 class Wallfollower {
 	IR* irlf;
 	IR* irlb;
 	IR* irlm;
 	IR* irf;
+	mraa::Gpio* uirb;
 	//IR* irb;
 	Motor* left;
 	Motor* right;
@@ -40,6 +42,7 @@ class Wallfollower {
 	float predif, prerror; //only for parallelrun
 	int cornercnt; // only for cornercnt
 	struct timeval tv;
+	float big_turn_rspeed; float big_turn_lspeed;float big_corner_distance;
 
 	bool initialized;
 	int channel4_mode;
@@ -58,7 +61,7 @@ class Wallfollower {
 	float estimatedistance() {    //for two ir sensors
 		float irlfd = irlf->getDistance();
 		float irlbd = irlb->getDistance();
-		return (irlfd+irlbd)*cos(fm_angle)/2;
+		return (irlfd+irlbd)/2;
 	}
 	long long timeDiff()
 	{
@@ -70,13 +73,14 @@ class Wallfollower {
 			return msl-ms;
 	}
 public:
-	Wallfollower(Motor* _l, Motor* _r, IR* _irlf, IR* _irlb, IR* _irlm,IR* _irf,Location* _start) {
+	Wallfollower(Motor* _l, Motor* _r, IR* _irf, IR* _irr, IR* _irlf, IR* _irlb, mraa::Gpio* _uirb, Location* _start) {
 		left = _l;
 		right = _r;
 		irlf = _irlf;
 		irlb = _irlb;
-		irlm = _irlm;
+		irr = _irr;
 		irf = _irf;
+		uirb = _uirb;
 		//irb = _irb;
 		start = _start;
 		current = _start;
@@ -184,6 +188,7 @@ public:
 			if (!initialized) {
 				check_stuck_base_time = (unsigned long long)(stktv.tv_sec)*1000 +
 					(unsigned long long)(stktv.tv_usec) / 1000;
+				cw = true;
 				setup_smoothrotate(15);
 				setup_parallel_to_wall();
 				initialized = true;
@@ -268,6 +273,7 @@ public:
 					setup_parallel_to_wall();
 					check_stuck_base_time = (unsigned long long)(stktv.tv_sec)*1000 +
 						(unsigned long long)(stktv.tv_usec) / 1000;
+					cw = false;
 					setup_smoothrotate(-15);
 					initialized = true;
 					return 4;
@@ -298,12 +304,12 @@ public:
 			if (channel5_mode == 0){
 				std::cout<<"big angle corner first time straight for a little! "<<std::endl;
 				if (!initialized) {
-					straight(big_corner_straight_distance);
+					setup_big_corner_dealer();
 					initialized = true;
 					return 5;
 				}
 				else {
-					if (!run()) {
+					if (!big_corner_dealer()) {
 						usleep(10000);
 						return 5;
 					}
@@ -315,49 +321,12 @@ public:
 				}
 			}
 			if (channel5_mode == 1){
-				std::cout<<"big angle corner turn! "<<std::endl;
-				if (!initialized) {
-					rotate(big_corner_rotate_angle);
-					initialized = true;
-					return 5;
-				}
-				else {
-					if (!run()) {
-						usleep(10000);
-						return 5;
-					}
-					else {
-						channel_stop();
-						channel5_mode = 2;
-						return 5;
-					}
-				}
-			}
-			if (channel5_mode == 2){
-				std::cout<<"big angle corner second time straight for a little! "<<std::endl;
-				if (!initialized) {
-					straight(big_corner_straight_distance);
-					initialized = true;
-					return 5;
-				}
-				else {
-					if (!run()) {
-						usleep(10000);
-						return 5;
-					}
-					else {
-						channel_stop();
-						channel5_mode = 3;
-						return 5;
-					}
-				}
-			}
-			if (channel5_mode == 3){
 				std::cout<<"big angle corner go parallel to the wall! "<<std::endl;
 				if (!initialized) {
 					check_stuck_base_time = (unsigned long long)(stktv.tv_sec)*1000 +
 						(unsigned long long)(stktv.tv_usec) / 1000;
 					setup_parallel_to_wall();
+					cw = true;
 					setup_smoothrotate(15);
 					initialized = true;
 					return 5;
@@ -428,6 +397,8 @@ public:
 			left->forward();
 			right->forward();
 			smooth_forward_speed = speed;
+			left->setSpeed(smooth_forward_speed);
+			right->setSpeed(smooth_forward_speed);
 		}
 		else
 		{
@@ -435,32 +406,36 @@ public:
 			right->backward();
 			left->backward();
 			smooth_forward_speed = -speed;
+			left->setSpeed(smooth_forward_speed);
+			right->setSpeed(smooth_forward_speed);
 		}
 	}
 	void setup_smoothrotate(float speed) {
 		if(speed>0)
 		{
-			cw=true;
 			left->forward();
 			right->backward();
 			smooth_rotate_speed = speed;
+			left->setTarget(smooth_rotate_speed);
+			right->setTarget(smooth_rotate_speed);
 		}
 		else
 		{
-			cw= false;
 			right->forward();
 			left->backward();
 			smooth_rotate_speed = -speed;
+			left->setTarget(smooth_rotate_speed);
+			right->setTarget(smooth_rotate_speed);
 		}
 	}
 	void smoothrotate_run() {
-		left->setSpeed(smooth_rotate_speed);
-		right->setSpeed(smooth_rotate_speed);
+		left->run();
+		right->run();
 		current = odo->run();
 	}
 	void smoothforward_run() {
-		left->setSpeed(smooth_forward_speed);
-		right->setSpeed(smooth_forward_speed);
+		left->run();
+		right->run();
 		current = odo->run();
 	}
 	void setup_parallelrun() {
@@ -473,7 +448,27 @@ public:
 		float dt = timeDiff();
 	}
 	void setup_parallel_to_wall() {
-		cntdec = 0, cnt = 0, det = false;
+		float lbdis = irlb->getDistance();
+		float lfdis = irlf->getDistance();
+	}
+	void setup_big_corner_dealer() {
+		left->forward();
+		right->forward();
+		float big_corner_distance = irlb->getDistance();
+		big_turn_rspeed = (distance+robotwidth)*big_corner_turn_omega;
+		big_turn_lspeed = distance * big_corner_turn_omega;
+		left->setSpeed(big_turn_lspeed);
+		right->setSpeed(big_turn_rspeed);
+	}
+	bool big_corner_dealer() {
+		if ((irlb->getDistance())<big_corner_constant*big_corner_distance) {
+			return true;
+		}
+		else {
+			left->run();
+			right->run();
+			return false;
+		}
 	}
 
 
@@ -505,12 +500,14 @@ public:
 	}
 	void parallelrun(){
 		float dt = timeDiff();
-		float error = target-irlm->getDistance();
+		float error = target-estimatedistance();
 		float dif = (error-prerror)/dt;
 		float ddif = (predif-dif)/dt;
 		float dspeed = error*K1+dif*K2+ddif*K3;
-		left->setSpeed(base_speed+dspeed);
-		right->setSpeed(base_speed-dspeed);
+		left->setTarget(base_speed+dspeed);
+		right->setTarget(base_speed-dspeed);
+		left->run();
+		right->run();
 		prerror = error;
 		predif = dif;
 		current = odo->run();
@@ -523,6 +520,12 @@ public:
 		float lfdis = irlf->getDistance();
 		std::cout<<"nowlfdis:  "<<lfdis<<",  nowlbdis:  "<<lbdis<<std::endl;
 		if ((lbdis==100) || (lfdis==100) ) {
+			if (cw == true) {
+				setup_smoothrotate(15);
+			}
+			else {
+				setup_smoothrotate(-15);
+			}
 			return false;
 		}
 		if (((lbdis-lfdis)<1.0) || ((lfdis-lbdis)<1.0)) {
@@ -534,57 +537,3 @@ public:
 		}
 	}
 };
-	/*
-	void setup_back_facing_wall() {
-		bcntdec = 0, bcnt = 0, bdet = false;
-		prebdis = irb->getDistance();
-		gettimeofday(&btv, NULL);
-		backward_base_time = (unsigned long long)(btv.tv_sec)*1000 +
-				(unsigned long long)(btv.tv_usec) / 1000;
-	}
-	bool back_facing_wall() {
-		gettimeofday(&btv, NULL);                //make sure won't go into deadlock
-		if ((((unsigned long long)(btv.tv_sec)*1000 +
-				(unsigned long long)(btv.tv_usec) / 1000)-backward_base_time)> 5000) {
-			return true;
-		}
-		float bdis =irb->getDistance();
-		if(prebdis>bdis) {
-			prebdis = bdis, bcnt=0;
-			if(bcntdec<5) bcntdec++;
-			else {
-				std::cout<<"detection to face the air"<<std::endl;
-				bdet = true;
-			}
-		}
-		else 
-		{
-			prebdis = bdis;
-			if(bcntdec<5) bcntdec = 0;
-			if (!bdet) return false;
-			else 
-			{
-				if (bcnt>0) 
-				{
-					std::cout<<"now facing backward!!"<<std::endl;
-					return true;
-				}
-				else bcnt++;
-			}
-		}
-		return false;
-	}
-};
-*/
-
-
-
-/*
-
-
-
-
-
-*/
-
-
