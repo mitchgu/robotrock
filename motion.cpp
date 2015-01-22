@@ -10,7 +10,10 @@
 #include "odometry.cpp"
 
 //const double Kp=0.5, Ki=0.15, Kd=0.2;
-const double Kp=0.8, Ki=0, Kd=0.2;
+double Kp,Ki,Kd;
+double bKp=0.6, bKi=0.0, bKd=0.05;
+double smKp=0.4, smKi=0.0, smKd=0.05;
+//double smKp=0.4, smKi=0.0, smKd=0.05; THIS WORKS PRETTY WELL
 const double mKp=0.05, mKi=0.01, mKd=0.005;
 
 class Motion
@@ -86,7 +89,7 @@ protected:
 		l->setTarget(baseSpeed+diff);
 		r->setTarget(baseSpeed-diff);
 		l->run(); r->run();
-		float _speed = ((l->rps()+r->rps())/2)i*12.095;
+		float _speed = ((l->rps()+r->rps())/2)*12.095;
 		std::cout<<_speed<<" speed "<<std::endl;
 		moveDistance = moveDistance-td*_speed/1000; return false;
 	}
@@ -100,7 +103,7 @@ public:
 		targetAngle=currentAngle = _start->theta();
 		intError=moveDistance=0;
 		rotating=false;
-		baseSpeed=1;
+		baseSpeed=1.5;
 	}
 	bool run()
 	{
@@ -119,6 +122,8 @@ public:
 		moveDistance=0;
 		rotating=true;
 		gettimeofday(&tv, NULL);
+		if(angle<=0.8) Kp=smKp,Ki=smKi,Kd=smKd;
+		else Kp=bKp,Ki=bKi,Kd=bKd;
 		intError=0,prevError=angle;
 	}
 	// forward distance straight

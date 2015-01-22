@@ -24,8 +24,8 @@ int main()
 
 	Motion* motion = new Motion(left,right,odo,location); 
 
-	motion->straight(1);
-	while(running&&!motion->run() ) usleep(10000);
+	//motion->straight(12);
+	//while(running&&!motion->run() ) usleep(10000);
 	left->stop();
 	right->stop();
 	sleep(1);

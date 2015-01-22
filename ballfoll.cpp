@@ -11,6 +11,7 @@
 #include <signal.h>
 
 #include "motion.cpp"
+#include "servo.cpp"
 #include "cv.cpp"
 
 int running=1;
@@ -38,31 +39,95 @@ int main()
 	VideoCapture cap(0);
 	assert(cap.isOpened());
 
-	motion->straight(10000);
+	Mat in,test,frame;
 
+	cap>>in;
+
+	downSize(in,test);
+
+	Size outSize=Size(test.cols,test.rows);
+
+	VideoWriter outVid("log.avi", CV_FOURCC('M','P','4','2'),1,outSize,true);
+	VideoWriter recVid("rlog.avi", CV_FOURCC('M','P','4','2'),1,outSize,true);
+	for(int i=0;i<10;i++) cap >> test;
+
+	motion->straight(10000);
 	while(running)
 	{
 		motion->run();
-		Mat in;
-		cap >> in;
+		for(int i=0;i<6;i++) cap >> in;
 		std::cout << "Grabbed frame" << std::endl;
 
-		Mat frame;
 		downSize(in,frame); //downsized
 
-		Mat out;
+		recVid<<frame;
+
 		maxFilter(frame,2);
-		target=fill(frame,2);
+		pdd ret=fill(frame,2);
+		double target=ret.second;
+
+		outVid<<frame;
 
 		if(target!=0&&fabs(target)>5)
 		{
+			left->stop(); right->stop();
 			std::cout<<target<<" angle"<<std::endl;
 			motion->rotate(target*3.14/180);
-			while(!motion->run()) usleep(10000);
+			while(running&&!motion->run()) usleep(1000);
 			sleep(0.1);
 			motion->straight(10000);
 		}
+		if(ret.first<22) running=0;
 		usleep(10000);
+	}
+
+	Motor* base = new Motor(10,11,6,false); //base motor -counterclockwise when forward
+	Motor* lift = new Motor(8,9,6,false); //lift motor
+
+	//running=1;
+
+	motion->straight(12);
+	while(running&&!motion->run() ) usleep(10000);
+	left->stop();
+	right->stop();
+	sleep(1);
+	running=0;
+	if(running)
+	{
+		Servo claw(15);
+
+		claw.write(0.7);
+
+		lift->forward();
+		lift->setSpeed(5);
+		usleep(1700000);
+		lift->stop();
+		sleep(1);
+
+		claw.write(0.15);
+		sleep(1);
+
+		lift->backward();
+		lift->setSpeed(5);
+		usleep(1700000);
+		lift->stop();
+		sleep(1);
+
+		base->forward();
+		base->turnAngle(90,3);
+
+		lift->forward();
+		lift->setSpeed(5);
+		usleep(100000);
+		lift->stop();
+
+		claw.write(0.7);
+		sleep(1);
+
+		lift->backward();
+		lift->setSpeed(5);
+		usleep(100000);
+		lift->stop();
 	}
 
 	left->stop(); right->stop();

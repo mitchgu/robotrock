@@ -1,1 +1,1 @@
-g++ cvtest.cpp -o cvtest `pkg-config opencv --cflags --libs` -lpthread -lmraa
+g++ ballfoll.cpp -o ballfoll `pkg-config opencv --cflags --libs` -lpthread -lmraa -std=c++0x

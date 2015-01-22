@@ -17,7 +17,7 @@ double dt;
 int count;
 
 //const double sKp=0.04, sKi=0.000005, sKd=0.0005;
-double sKp=0.15, sKi=0.000000, sKd=0.0000;
+double sKp=0.12, sKi=0.000001, sKd=0.0003;
 
 void tickCounter(void* args)
 {
@@ -45,7 +45,7 @@ class Motor
 	int dpin, ppin;
 	mraa::Gpio* hall;
 	bool side; //0 -left or 1-right
-	double targetRPS,integ,volt;
+	double targetRPS,integ,volt,prev;
 	bool forw;
 	struct timeval tv;
 	long long timeDiff()
@@ -69,7 +69,7 @@ public:
 		hall= new mraa::Gpio(_hpin);
 		hall->dir(mraa::DIR_IN);
 		side=_side;
-		targetRPS=volt=integ=0;
+		prev=targetRPS=volt=integ=0;
 		gettimeofday(&tv, NULL);
 	}	
 	void forward()
@@ -110,8 +110,9 @@ public:
 		double dt=timeDiff();
 		double e=targetRPS-rps();
 		//std::cout<<"error is"<<e<<std::endl;
-		double deriv=e/dt;
+		double deriv=(e-prev)/dt;
 		integ+=e*dt;
+		prev=e;
 		double dx=sKp*e+sKi*integ+sKd*deriv;
 		writeVolt(volt+dx);
 	}

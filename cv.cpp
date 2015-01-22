@@ -40,7 +40,8 @@ pdd getDist(int gi, int gj)
 		}
 	}
 	file.close();
-	return mp(std::sqrt(oi*oi+oj*oj),std::atan2(oi,oj));
+	double angle=std::atan2(oi,oj)*180/3.14159;
+	return mp(std::sqrt(oi*oi+oj*oj),angle);
 }
 pdd getOldDist(int i, int j)
 {
@@ -63,7 +64,7 @@ void hsv(Mat& inFrame, Mat& outFrame)
 void maxFilter(Mat& frame, int ind, double multA=1.22, double multB=1.5)
 {
 	bool Y=false;
-	if(ind!=0) multA=multB=1.3;
+	if(ind!=0) multA=multB=1.2;
 	if(ind==3) Y=true,ind=1,multA=0.8,1.12;
 	REP(i,frame.rows)
 	{
@@ -114,20 +115,20 @@ int dfs(int i, int j, Mat &inFrame, int ind)
 	}
 	return ar;
 }
-double fill(Mat &inFrame, int ind)
+pdd fill(Mat &inFrame, int ind)
 {
 	if(ind==3) ind=1;
 	comp=new int*[inFrame.rows];
 	cents.resize(0);
 	currentComp=0;
 	dimR=inFrame.rows, dimC=inFrame.cols;
-	std::cout<<dimR<<" "<<dimC<<std::endl;
+	//std::cout<<dimR<<" "<<dimC<<std::endl;
 	REP(i,inFrame.rows)
 	{
 		comp[i]=new int[inFrame.cols];
 		REP(j,inFrame.cols) comp[i][j]=-1;
 	}
-	double ret=0;
+	pdd ret=mp(1e9,0);
 	REP(i,inFrame.rows) REP(j,inFrame.cols) 
 	{
 		if(!check(i,j,inFrame,ind)) continue;
@@ -135,13 +136,13 @@ double fill(Mat &inFrame, int ind)
 		int ar=dfs(i,j,inFrame,ind);
 		int ci=toti/((double)ar);
 		int cj=totj/((double)ar);
-		if(ar>=1000) 
+		if(ar>=200) 
 		{
-			std::cout<<"("<<ci<<", "<<cj<<"), area: "<<ar<<std::endl;
+			//std::cout<<"("<<ci<<", "<<cj<<"), area: "<<ar<<std::endl;
 			cents.pb(mp(ci,cj));
 			std::pair<double,double> dist=getDist(ci,cj);
 			std::cout<<"This point is "<<dist.first<<" inches away at angle "<<dist.second<<" to the normal \n";
-			ret=dist.second;
+			ret=dist;
 			REP(x,5) REP(y,5) 
 			{
 				int ni=ci+x,nj=cj+y;

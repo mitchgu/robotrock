@@ -1,3 +1,6 @@
+#include "motion.cpp"
+#include <iostream>
+#include "shortIR.cpp"
 const float slp = 0.5;
 const float reflect_distance = 6.0;
 const float rotate_speed = 1.0;
@@ -9,7 +12,7 @@ class Randomwalk {   //this is the normal random walk
 	IR* irlf;
 	IR* irlb;
 	IR* irf;
-	IR* ir;
+	IR* irr;
 	mraa::Gpio* uirb;
 	Location* start;
 	Location* current;
@@ -20,16 +23,16 @@ class Randomwalk {   //this is the normal random walk
 	bool initialized;
 	float in_angle; float mid_angle; float out_angle; bool wait; int cnt; int cntinc; bool dec;
 public:
-	Randomwalk(Motor* _left, Motor* _right, IR* _irlf, IR* _irlb, IR* _irf, IR* _ir, mraa::Gpio* _uirb, Location* _start) {
+	Randomwalk(Motor* _left, Motor* _right, IR* _irlf, IR* _irlb, IR* _irf, IR* _irr, mraa::Gpio* _uirb, Location* _start) {
 		left = _left;
 		right = _right;
 		irlf = _irlf;
 		irlb = _irlb;
-		ir = _ir;
+		irr = _irr;
 		irf = _irf;
 		uirb = _uirb;
 		start = _start;
-		current = _current;
+		current = start;
 		current_angle = start->theta();
 		odo = new Odometry(left,right,start->x(),start->y(),start->theta());
 	}
@@ -106,7 +109,7 @@ public:
 	bool reflect_next() {
 		if (!wait) return false;
 		else {
-			if ((odo->getAngle())>out_angle()) {
+			if ((odo->getAngle())>out_angle) {
 				return true;
 			}
 		}
@@ -123,14 +126,15 @@ public:
 		}
 		else {
 			if (channel == 1) {   //move forward
-				if (!initialezed) {
+				if (!initialized) {
 					forward_setup();
 					initialized = true;
+					return 1;
 				}
 				else {
 					forward_run();
 					if (forward_next()) {
-						channel_stop()
+						channel_stop();
 						return 2;
 					}
 					else return 1;
@@ -140,6 +144,7 @@ public:
 				if (!initialized) {
 					reflect_setup();
 					initialized = true;
+					return 2;
 				}
 				else {
 					reflect_run();

@@ -1,17 +1,16 @@
 #include "motion.cpp"
 #include <iostream>
 #include "shortIR.cpp"
-const float Kpw = 0.12, Kdw = 36, Kddw = 3000;
-const float threshelddis = 6.0; //for the first approaching to wall
+const float Kpw = 0.2, Kdw =0,Kiw = 0;// 10, Kiw =0.00000000000004;
+const float threshelddis = 7.5; //for the first approaching to wall
 const float distance_of_irlfb = 2.0;
-const float big_corner_turn_omega = 0.2;
+const float big_corner_turn_omega = 0.08;
 const float base_speed = 1.0; //parallel run base speed
 const float slp=0.7;
-const float big_corner_straight_distance=22;
-const float distance_to_wall=6.0;
+const float distance_to_wall=4.0;
 const float small_corner_rotate_angle=1.9;
 const float big_corner_rotate_angle= -1.9;
-const float robotwidth =13;
+const float robotwidth =12.0;
 const float rotate_stuck_time = 10;
 const float parallel_run_stuck_time = 15;
 const float forward_stuck_time = 15;
@@ -39,7 +38,7 @@ class Wallfollower {
 	bool det; bool cw; bool forw; int cnt;int cntdec; //only for setAngle
 	unsigned long long backward_base_time; struct timeval btv; bool bdet; int bcnt; int bcntdec; float prebdis; // only for facing air
 	unsigned long long check_stuck_base_time; struct timeval stktv;
-	float predif, prerror; //only for parallelrun
+	float integration, prerror; //only for parallelrun
 	int cornercnt; // only for cornercnt
 	struct timeval tv;
 	float big_turn_rspeed; float big_turn_lspeed;float big_corner_distance;
@@ -61,7 +60,8 @@ class Wallfollower {
 	float estimatedistance() {    //for two ir sensors
 		float irlfd = irlf->getDistance();
 		float irlbd = irlb->getDistance();
-		return (irlfd+irlbd)/2;
+		float esangle = atan((irlfd-irlbd)/2.2);
+		return (irlfd+irlbd)*cos(esangle)/2;
 	}
 	long long timeDiff()
 	{
@@ -157,7 +157,7 @@ public:
 		if (channel == 1) {               //step1 : move forward, until you see the wall
 			std::cout<<"channel 1: move forward to the wall "<<std::endl;
 			if(!initialized){
-				setup_smoothforward(0.7);
+				setup_smoothforward(1.0);
 				initialized = true;
 				return 1;
 			}
@@ -442,7 +442,7 @@ public:
 		check_stuck_base_time = (unsigned long long)(stktv.tv_sec)*1000 +
 			(unsigned long long)(stktv.tv_usec) / 1000;
 		prerror = 0;
-		predif = 0;
+		integration = 0;
 		left->forward();
 		right->forward();
 		left->setSpeed(base_speed);
@@ -455,14 +455,15 @@ public:
 	void setup_big_corner_dealer() {
 		left->forward();
 		right->forward();
-		float big_corner_distance = irlb->getDistance();
-		big_turn_rspeed = (distance+robotwidth)*big_corner_turn_omega;
-		big_turn_lspeed = distance * big_corner_turn_omega;
+		float big_corner_distance = irlb->getDistance()+2;
+		big_turn_rspeed = (big_corner_distance+robotwidth)*big_corner_turn_omega;
+		big_turn_lspeed = big_corner_distance * big_corner_turn_omega;
+		std::cout<<"lspeed:  "<<big_turn_lspeed<<"  rspeed:  "<<big_turn_rspeed<<std::endl;
 		left->setSpeed(big_turn_lspeed);
 		right->setSpeed(big_turn_rspeed);
 	}
 	bool big_corner_dealer() {
-		if ((irlb->getDistance())<big_corner_constant*big_corner_distance) {
+		if (((irlf->getDistance())<5)||(irf->getDistance()<7)) {
 			return true;
 		}
 		else {
@@ -481,7 +482,7 @@ public:
 		if (irf->getDistance()<=small_corner_threshold_distance) { return 1;}
 		std::cout<<"irlf:  "<<irlf->getDistance()<<std::endl;
 		if (irlf->getDistance()==100) { 
-			if(cornercnt=0) {
+			if(cornercnt>20) {
 				cornercnt++;
 			} 
 			else { 
@@ -506,17 +507,16 @@ public:
 		float dis = estimatedistance();
 		float error = target-dis;
 		float dif = (error-prerror)/dt;
-		float ddif = (predif-dif)/dt;
-		float dspeed = error*Kpw+dif*Kdw+ddif*Kddw;
+		integration = integration + error*dt;
+		float dspeed = error*Kpw+dif*Kdw+integration*Kiw;
 		std::cout<<"dspeed is: "<<dspeed<<"  dt:  "<<dt<<" dis: "<<dis<<std::endl;
 		//dspeed = 0;
-		std::cout<<"error: "<<error*Kpw<<" dif: "<<dif*Kdw<<" ddif: "<<ddif*Kddw<<std::endl;
+		std::cout<<"error: "<<error*Kpw<<" dif: "<<dif*Kdw<<" int: "<<integration*Kiw<<std::endl;
 		left->setTarget(base_speed+dspeed);
 		right->setTarget(base_speed-dspeed);
 		left->run();
 		right->run();
 		prerror = error;
-		predif = dif;
 		current = odo->run();
 	}
 	bool parallel_to_wall() {
