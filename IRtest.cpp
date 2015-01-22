@@ -12,7 +12,7 @@ void sig_handler(int signo)
 };
 int main() {
 	signal(SIGINT, sig_handler);
-	IR ir(3);
+	IR ir(0);
 	float distance = ir.getDistance();
 	std::cout<<"distance: "<<distance<<std::endl;
    	return 0;
