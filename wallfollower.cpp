@@ -40,7 +40,7 @@ class Wallfollower {
 	bool det; bool cw; bool forw; int cnt;int cntdec; //only for setAngle
 	unsigned long long backward_base_time; struct timeval btv; bool bdet; int bcnt; int bcntdec; float prebdis; // only for facing air
 	unsigned long long check_stuck_base_time; struct timeval stktv;
-	float predif, prerror; //only for parallelrun
+	float integration, prerror; //only for parallelrun
 	int cornercnt; // only for cornercnt
 	struct timeval tv;
 	float big_turn_rspeed; float big_turn_lspeed;float big_corner_distance; float base_turn_angle; float before_turn_distance;
@@ -460,7 +460,7 @@ public:
 		check_stuck_base_time = (unsigned long long)(stktv.tv_sec)*1000 +
 			(unsigned long long)(stktv.tv_usec) / 1000;
 		prerror = 0;
-		predif = 0;
+		integration = 0;
 		left->forward();
 		right->forward();
 		float dt = timeDiff();
