@@ -136,7 +136,26 @@ public:
 			std::cout<<"channel 0: I meat a problem "<<std::endl;
 			std::cout<<"channel 0: I meat a problem "<<std::endl;
 			std::cout<<"channel 0: I meat a problem "<<std::endl;
+			if (!initialized) {
+				setup_smoothforward(-1);
+				gettimeofday(&stktv, NULL);
+				check_stuck_base_time = (unsigned long long)(stktv.tv_sec)*1000 +  (unsigned long long)(stktv.tv_usec) / 1000;
+				initialized = true;
+				return 0;
+			}
+			else {
+				gettimeofday(&stktv,NULL);
+				if(((unsigned long long)(stktv.tv_sec)*1000 +  (unsigned long long)(stktv.tv_usec) / 1000)-check_stuck_base_time<1000) {
+				smoothforward_run();
+				return 0;
+				}
+				else {
+					channel_stop();
+					return 1;
+				}
+			}
 			/*
+			(((unsigned long long)(stktv.tv_sec)*1000 +
 			if(!initialized) {
 				setup_smoothrotate(10);
 				setup_back_facing_wall();
@@ -157,7 +176,6 @@ public:
 					return 1;
 				}
 			}*/
-			return 1;
 		}
 		if (channel == 1) {               //step1 : move forward, until you see the wall
 			std::cout<<"channel 1: move forward to the wall "<<std::endl;
@@ -172,6 +190,7 @@ public:
 					(unsigned long long)(stktv.tv_usec) / 1000)-check_stuck_base_time)> forward_stuck_time*100000) {
 					std::cout<<"running out of time"<<check_stuck_base_time<<"  "<<((unsigned long long)(stktv.tv_sec)*1000 +
 							                                         (unsigned long long)(stktv.tv_usec) / 1000)<<std::endl;
+					initialized = false;
 					return 0;
 				}
 				smoothforward_run();
@@ -191,6 +210,10 @@ public:
 		if(channel == 2) {                      //step2 : parallel to wall
 			std::cout<<"channel 2: parallel to wall! "<<std::endl;
 			if (!initialized) {
+				gettimeofday(&stktv,NULL);
+				check_stuck_base_time = (unsigned long long)(stktv.tv_sec)*1000 +
+					(unsigned long long)(stktv.tv_usec) / 1000;
+				std::cout<<"I am initialized!"<<std::endl;
 				cw = true;
 				setup_smoothrotate(0.6);
 				setup_parallel_to_wall();
@@ -199,8 +222,11 @@ public:
 			}
 			else {
 				gettimeofday(&stktv, NULL); 
-				if ((((unsigned long long)(stktv.tv_sec)*1000 +
-					(unsigned long long)(stktv.tv_usec) / 1000)-check_stuck_base_time)> rotate_stuck_time*1000) {
+				unsigned long long time_range = (((unsigned long long)(stktv.tv_sec)*1000 +
+					(unsigned long long)(stktv.tv_usec) / 1000)-check_stuck_base_time);
+				std::cout<<"time_range:"<<time_range<<std::endl;
+				if(time_range>rotate_stuck_time*1000) {
+					initialized = false;
 					return 0;
 				}
 				smoothrotate_run();
@@ -228,6 +254,7 @@ public:
 				gettimeofday(&stktv, NULL); 
 				if ((((unsigned long long)(stktv.tv_sec)*1000 +
 					(unsigned long long)(stktv.tv_usec) / 1000)-check_stuck_base_time)> parallel_run_stuck_time*1000) {
+					initialized = false;
 					return 0;
 				}
 				parallelrun();
@@ -266,6 +293,7 @@ public:
 					if ((((unsigned long long)(stktv.tv_sec)*1000 +
 						(unsigned long long)(stktv.tv_usec) / 1000)-check_stuck_base_time)> small_corner_turn_stuck_time*1000) {
 						channel4_mode =0;
+						initialized = false;
 						return 2;
 					}
 					if (!run()) {
@@ -281,6 +309,9 @@ public:
 			if (channel4_mode ==1){               //case4, mode 2: go parallel to the wall 
 				std::cout<<"small angle corner parallel to wall! "<<std::endl;
 				if (!initialized) {
+					gettimeofday(&stktv,NULL);
+					check_stuck_base_time = (unsigned long long)(stktv.tv_sec)*1000 +
+						(unsigned long long)(stktv.tv_usec) / 1000;
 					setup_parallel_to_wall();
 					cw = false;
 					setup_smoothrotate(-1.5);
@@ -292,6 +323,7 @@ public:
 					if ((((unsigned long long)(stktv.tv_sec)*1000 +
 						(unsigned long long)(stktv.tv_usec) / 1000)-check_stuck_base_time)> rotate_stuck_time*1000) {
 						channel4_mode = 0;
+						initialized = false;
 						return 0;
 					}
 					if (!parallel_to_wall()) {
@@ -323,6 +355,7 @@ public:
 					if ((((unsigned long long)(stktv.tv_sec)*1000 +
 						(unsigned long long)(stktv.tv_usec) / 1000)-check_stuck_base_time)>big_wall_rotate_stuck_time*1000) {
 						channel5_mode = 0;
+						initialized = false;
 						return 0;
 					}
 					if (!big_corner_dealer()) {
@@ -339,6 +372,9 @@ public:
 			if (channel5_mode == 1){
 				std::cout<<"big angle corner go parallel to the wall! "<<std::endl;
 				if (!initialized) {
+					gettimeofday(&stktv,NULL);
+					check_stuck_base_time = (unsigned long long)(stktv.tv_sec)*1000 +
+						(unsigned long long)(stktv.tv_usec) / 1000;
 					setup_parallel_to_wall();
 					cw = true;
 					setup_smoothrotate(1.5);
@@ -350,6 +386,7 @@ public:
 					if ((((unsigned long long)(stktv.tv_sec)*1000 +
 						(unsigned long long)(stktv.tv_usec) / 1000)-check_stuck_base_time)> rotate_stuck_time*1000) {
 						channel5_mode = 0;
+						initialized = false;
 						return 0;
 					}
 					if (!parallel_to_wall()) {
@@ -426,8 +463,6 @@ public:
 		}
 	}
 	void setup_smoothrotate(float speed) {
-		check_stuck_base_time = (unsigned long long)(stktv.tv_sec)*1000 +
-					(unsigned long long)(stktv.tv_usec) / 1000;
 		if(speed>0)
 		{
 			left->forward();
@@ -551,7 +586,6 @@ public:
 		current = odo->run();
 	}
 	bool parallel_to_wall() {
-		gettimeofday(&stktv, NULL);
 		current = odo->run();
 		// do parallel to wall
 		float lbdis = irlb->getDistance();
@@ -570,7 +604,7 @@ public:
 			return true;
 		}
 		else {
-			setup_smoothrotate((lbdis-lfdis)*0.5);
+			setup_smoothrotate((lbdis-lfdis)*0.2);
 			return false;
 		}
 		return false;
