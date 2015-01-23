@@ -137,8 +137,12 @@ public:
 	{
 		count=0;
 		setSpeed(speed);
-		hall->isr(mraa::EDGE_RISING, edge_handler, hall);
-		while(count<=ticks) usleep(100);
+		hall->isr(mraa::EDGE_RISING, tickCounter, hall);
+		while(count<=ticks)
+		{
+			//std::cout<<"ticks "<<ticks<<" count "<<count<<std::endl;
+			usleep(100);
+		}
 		hall->isrExit();
 		stop();
 	}

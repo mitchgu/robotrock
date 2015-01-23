@@ -45,6 +45,13 @@ public:
 		Point* return_point = new Point(return_x,return_y);
 		return return_point;
 	}
+	Point operator-(Point other) {
+		Point out(x()-other.x(),y()-other.y());
+	}
+	float abs()
+	{
+		return sqrt(_x*_x+_y*_y);
+	}
 };
 
 class Wall {
