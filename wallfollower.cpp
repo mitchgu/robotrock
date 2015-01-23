@@ -1,17 +1,16 @@
 #include "motion.cpp"
 #include <iostream>
 #include "shortIR.cpp"
-const float Kpw = 0.3, Kdw = 1, Kiw = 0.01;
-const float threshelddis = 8.0; //for the first approaching to wall
+const float Kpw = 0.05, Kdw = 30, Kiw = 0;
+const float threshelddis = 7.5; //for the first approaching to wall
 const float distance_of_irlfb = 2.0;
-const float big_corner_turn_omega = 1.5;
-const float base_speed = 15; //parallel run base speed
+const float big_corner_turn_omega = 0.08;
+const float base_speed = 1; //parallel run base speed
 const float slp=0.7;
-const float big_corner_straight_distance=22;
-const float distance_to_wall=8.0;
+const float distance_to_wall=4.5;
 const float small_corner_rotate_angle=1.9;
 const float big_corner_rotate_angle= -1.9;
-const float robotwidth =13;
+const float robotwidth =12;
 const float rotate_stuck_time = 10;
 const float parallel_run_stuck_time = 15;
 const float forward_stuck_time = 15;
@@ -44,7 +43,7 @@ class Wallfollower {
 	float predif, prerror; //only for parallelrun
 	int cornercnt; // only for cornercnt
 	struct timeval tv;
-	float big_turn_rspeed; float big_turn_lspeed;float big_corner_distance;
+	float big_turn_rspeed; float big_turn_lspeed;float big_corner_distance; float base_turn_angle; float before_turn_distance;
 
 	bool initialized;
 	int channel4_mode;
@@ -95,6 +94,7 @@ public:
 		channel5_mode = 0;
 		initialized = false;
 		locating_return_channel = 0;
+		before_turn_distance = 4.5;
 	}
 
 	/*
@@ -475,17 +475,26 @@ public:
 			(unsigned long long)(stktv.tv_usec) / 1000;
 		left->forward();
 		right->forward();
-		float big_corner_distance = irlb->getDistance();
+		float big_corner_distance = before_turn_distance+2;
 		big_turn_rspeed = (distance+robotwidth)*big_corner_turn_omega;
 		big_turn_lspeed = distance * big_corner_turn_omega;
 		left->setSpeed(big_turn_lspeed);
 		right->setSpeed(big_turn_rspeed);
 	}
 	bool big_corner_dealer() {
-		if ((irlb->getDistance())<big_corner_constant*big_corner_distance) {
-			return true;
+		if ((odo->getAngle()-base_turn_angle)<1.5){
+			if (((irlf->getDistance())<5)||(irf->getDistance()<7)) {
+				return true;
+			}
+			else {
+				current = odo->run();
+				left->run();
+				right->run();
+				return false;
+			}
 		}
 		else {
+			current = odo->run();
 			left->run();
 			right->run();
 			return false;
@@ -522,6 +531,8 @@ public:
 	void parallelrun(){
 		float dt = timeDiff();
 		float error = target-estimatedistance();
+		float irlbd = irlb->getDistance();
+		if (irlbd!=100) before_turn_distance = irlbd;
 		float dif = (error-prerror)/dt;
 		float ddif = (predif-dif)/dt;
 		float dspeed = error*K1+dif*K2+ddif*K3;
