@@ -46,7 +46,7 @@ public:
 			recvVal = (recvVal << 8) | ((uint8_t)recv[2] & 0xFF);
 			recvVal = (recvVal << 8) | ((uint8_t)recv[1] & 0xFF);
 			recvVal = (recvVal << 8) | ((uint8_t)recv[0] & 0xFF);
-			printf("Received: 0x%.8x, ", recvVal);
+			//printf("Received: 0x%.8x, ", recvVal);
 			// Sensor reading
 			short reading = (recvVal >> 10) & 0xffff;
 			if (init) {
@@ -59,7 +59,7 @@ public:
 				float msf = (float)msi;
 				float rf = (float)reading;
 				total += -0.001 * msf * (rf / 80.0);
-				printf("Total: %f, Reading: %f, Time: %f\n", total, rf, -msf);
+				printf("Total angle: %f\n", total );
 			}
 			else {
 				init = 1;

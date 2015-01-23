@@ -43,12 +43,12 @@ int main()
 
 	cap>>in;
 
-	downSize(in,test);
+	//downSize(in,test);
 
-	Size outSize=Size(test.cols,test.rows);
+	//Size outSize=Size(test.cols,test.rows);
 
-	VideoWriter outVid("log.avi", CV_FOURCC('M','P','4','2'),1,outSize,true);
-	VideoWriter recVid("rlog.avi", CV_FOURCC('M','P','4','2'),1,outSize,true);
+	//VideoWriter outVid("log.avi", CV_FOURCC('M','P','4','2'),1,outSize,true);
+	//VideoWriter recVid("rlog.avi", CV_FOURCC('M','P','4','2'),1,outSize,true);
 	for(int i=0;i<10;i++) cap >> test;
 
 	motion->straight(10000);
@@ -60,13 +60,13 @@ int main()
 
 		downSize(in,frame); //downsized
 
-		recVid<<frame;
+		//recVid<<frame;
 
 		maxFilter(frame,2);
 		pdd ret=fill(frame,2);
 		double target=ret.second;
 
-		outVid<<frame;
+		//outVid<<frame;
 
 		if(target!=0&&fabs(target)>5)
 		{
@@ -83,9 +83,12 @@ int main()
 
 	Motor* base = new Motor(10,11,6,false); //base motor -counterclockwise when forward
 	Motor* lift = new Motor(8,9,6,false); //lift motor
+	left->stop(); right->stop();
+	sleep(1);
 
-	//running=1;
+	running=1;
 
+	motion->setBaseSpeed(0.5);
 	motion->straight(12);
 	while(running&&!motion->run() ) usleep(10000);
 	left->stop();

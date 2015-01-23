@@ -1,13 +1,13 @@
 #include "motion.cpp"
 #include <iostream>
 #include "shortIR.cpp"
-const float Kpw = 0.2, Kdw =0,Kiw = 0;// 10, Kiw =0.00000000000004;
+const float Kpw = 0.05, Kdw =30,Kiw = 0;// 10, Kiw =0.00000000000004;
 const float threshelddis = 7.5; //for the first approaching to wall
 const float distance_of_irlfb = 2.0;
 const float big_corner_turn_omega = 0.08;
 const float base_speed = 1.0; //parallel run base speed
 const float slp=0.7;
-const float distance_to_wall=4.0;
+const float distance_to_wall=4.5;
 const float small_corner_rotate_angle=1.9;
 const float big_corner_rotate_angle= -1.9;
 const float robotwidth =12.0;
@@ -41,7 +41,7 @@ class Wallfollower {
 	float integration, prerror; //only for parallelrun
 	int cornercnt; // only for cornercnt
 	struct timeval tv;
-	float big_turn_rspeed; float big_turn_lspeed;float big_corner_distance;
+	float big_turn_rspeed; float big_turn_lspeed;float big_corner_distance; float base_turn_angle; float before_turn_distance;
 
 	bool initialized;
 	int channel4_mode;
@@ -60,8 +60,12 @@ class Wallfollower {
 	float estimatedistance() {    //for two ir sensors
 		float irlfd = irlf->getDistance();
 		float irlbd = irlb->getDistance();
+		/*
 		float esangle = atan((irlfd-irlbd)/2.2);
 		return (irlfd+irlbd)*cos(esangle)/2;
+		*/
+		return (irlfd+irlbd)/2;
+
 	}
 	long long timeDiff()
 	{
@@ -93,6 +97,7 @@ public:
 		channel5_mode = 0;
 		initialized = false;
 		locating_return_channel = 0;
+		before_turn_distance = 4.5;
 	}
 
 	/*
@@ -455,18 +460,28 @@ public:
 	void setup_big_corner_dealer() {
 		left->forward();
 		right->forward();
-		float big_corner_distance = irlb->getDistance()+2;
+		float big_corner_distance = before_turn_distance+2;
 		big_turn_rspeed = (big_corner_distance+robotwidth)*big_corner_turn_omega;
 		big_turn_lspeed = big_corner_distance * big_corner_turn_omega;
 		std::cout<<"lspeed:  "<<big_turn_lspeed<<"  rspeed:  "<<big_turn_rspeed<<std::endl;
 		left->setSpeed(big_turn_lspeed);
 		right->setSpeed(big_turn_rspeed);
+		base_turn_angle = odo->getAngle();
 	}
 	bool big_corner_dealer() {
-		if (((irlf->getDistance())<5)||(irf->getDistance()<7)) {
-			return true;
+		if ((odo->getAngle()-base_turn_angle)<1.5){
+			if (((irlf->getDistance())<5)||(irf->getDistance()<7)) {
+				return true;
+			}
+			else {
+				current = odo->run();
+				left->run();
+				right->run();
+				return false;
+			}
 		}
 		else {
+			current = odo->run();
 			left->run();
 			right->run();
 			return false;
@@ -509,6 +524,8 @@ public:
 		float dif = (error-prerror)/dt;
 		integration = integration + error*dt;
 		float dspeed = error*Kpw+dif*Kdw+integration*Kiw;
+		float irlbd = irlb->getDistance();
+		if (irlbd!=100) before_turn_distance = irlbd;
 		std::cout<<"dspeed is: "<<dspeed<<"  dt:  "<<dt<<" dis: "<<dis<<std::endl;
 		//dspeed = 0;
 		std::cout<<"error: "<<error*Kpw<<" dif: "<<dif*Kdw<<" int: "<<integration*Kiw<<std::endl;
@@ -535,12 +552,12 @@ public:
 			}
 			return false;
 		}
-		if (((lbdis-lfdis)<0.15) && ((lfdis-lbdis)<0.15)) {
+		if (((lbdis-lfdis)<0.2) && ((lfdis-lbdis)<0.2)) {
 			std::cout<<"nowlfdis:  "<<lfdis<<",  nowlbdis:  "<<lbdis<<std::endl;
 			return true;
 		}
 		else {
-			setup_smoothrotate((lbdis-lfdis)*0.2);
+			setup_smoothrotate((lbdis-lfdis)*0.5);
 			return false;
 		}
 		return false;
