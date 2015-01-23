@@ -22,12 +22,11 @@ int main(){
 	IR* irlb = new IR(2);
 	mraa::Gpio* uirb = new mraa::Gpio(8);
 	Planningwalk* pw= new Planningwalk(left,right,irf,irlf,irlb,irr,uirb,location);
-	pw->forward_setup();
-	while(running && !pw->forward_next()) {
-		pw->forward_run();
+	int channel = 1;
+	while(running ) {
+		channel = pw->run(channel);
 	} 
-	pw->channel_stop();
-	pw->getwallside();
+	right->stop(); left->stop();
 	sleep(1);	
 	return 0;
 }

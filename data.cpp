@@ -158,6 +158,14 @@ public:
 		returnlocation->set(returnx, returny, returntheta);
 		return returnlocation;
 	}
+	Location* move_forward(float dis) {
+		Location* return_location;
+		float return_theta = theta();
+		float return_x = x() + dis*sin(return_theta);
+		float return_y = y() + dis*cos(return_theta);
+		return_location = new Location(return_x,return_y,return_theta);
+		return return_location;
+	}
 	Point* point() {
 		Point* pt = new Point(x(),y());
 		return pt;
