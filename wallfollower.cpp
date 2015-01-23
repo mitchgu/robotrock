@@ -22,7 +22,7 @@ const float big_wall_rotate_stuck_time = 10;
 class Wallfollower {
 	IR* irlf;
 	IR* irlb;
-	IR* irlm;
+	IR* irr;
 	IR* irf;
 	mraa::Gpio* uirb;
 	//IR* irb;
@@ -40,7 +40,7 @@ class Wallfollower {
 	bool det; bool cw; bool forw; int cnt;int cntdec; //only for setAngle
 	unsigned long long backward_base_time; struct timeval btv; bool bdet; int bcnt; int bcntdec; float prebdis; // only for facing air
 	unsigned long long check_stuck_base_time; struct timeval stktv;
-	float predif, prerror; //only for parallelrun
+	float integration, prerror; //only for parallelrun
 	int cornercnt; // only for cornercnt
 	struct timeval tv;
 	float big_turn_rspeed; float big_turn_lspeed;float big_corner_distance; float base_turn_angle; float before_turn_distance;
@@ -162,7 +162,7 @@ public:
 		if (channel == 1) {               //step1 : move forward, until you see the wall
 			std::cout<<"channel 1: move forward to the wall "<<std::endl;
 			if(!initialized){
-				setup_smoothforward(15);
+				setup_smoothforward(1.0);
 				initialized = true;
 				return 1;
 			}
@@ -177,7 +177,7 @@ public:
 				smoothforward_run();
 				usleep(10000);
 				if (!close_to_wall()) {
-					std::cout<<"run through"<<std::endl;
+					//std::cout<<"through"<<std::endl;
 					return 1;
 				}
 				else {
@@ -192,7 +192,7 @@ public:
 			std::cout<<"channel 2: parallel to wall! "<<std::endl;
 			if (!initialized) {
 				cw = true;
-				setup_smoothrotate(15);
+				setup_smoothrotate(0.6);
 				setup_parallel_to_wall();
 				initialized = true;
 				return 2;
@@ -269,7 +269,6 @@ public:
 						return 2;
 					}
 					if (!run()) {
-						usleep(10000);
 						return 4;
 					}
 					else {
@@ -284,7 +283,7 @@ public:
 				if (!initialized) {
 					setup_parallel_to_wall();
 					cw = false;
-					setup_smoothrotate(-15);
+					setup_smoothrotate(-1.5);
 					initialized = true;
 					return 4;
 				}
@@ -311,7 +310,7 @@ public:
 		}
 
 		if(channel == 5) {                                 //case 5: big angle corner dealer
-			std::cout<<"channel 4: big angle corner dealer! "<<std::endl;
+			std::cout<<"channel 5: big angle corner dealer! "<<std::endl;
 			if (channel5_mode == 0){
 				std::cout<<"big angle corner first time straight for a little! "<<std::endl;
 				if (!initialized) {
@@ -322,7 +321,7 @@ public:
 				else {
 					gettimeofday(&stktv, NULL); 
 					if ((((unsigned long long)(stktv.tv_sec)*1000 +
-						(unsigned long long)(stktv.tv_usec) / 1000)-check_stuck_base_time)> *1000) {
+						(unsigned long long)(stktv.tv_usec) / 1000)-check_stuck_base_time)>big_wall_rotate_stuck_time*1000) {
 						channel5_mode = 0;
 						return 0;
 					}
@@ -342,7 +341,7 @@ public:
 				if (!initialized) {
 					setup_parallel_to_wall();
 					cw = true;
-					setup_smoothrotate(15);
+					setup_smoothrotate(1.5);
 					initialized = true;
 					return 5;
 				}
@@ -460,10 +459,11 @@ public:
 		check_stuck_base_time = (unsigned long long)(stktv.tv_sec)*1000 +
 			(unsigned long long)(stktv.tv_usec) / 1000;
 		prerror = 0;
-		predif = 0
+		integration = 0;
 		left->forward();
 		right->forward();
-		float dt = timeDiff();
+		left->setSpeed(base_speed);
+		right->setSpeed(base_speed);
 	}
 	void setup_parallel_to_wall() {
 		float lbdis = irlb->getDistance();
@@ -476,14 +476,16 @@ public:
 		left->forward();
 		right->forward();
 		float big_corner_distance = before_turn_distance+2;
-		big_turn_rspeed = (distance+robotwidth)*big_corner_turn_omega;
-		big_turn_lspeed = distance * big_corner_turn_omega;
+		big_turn_rspeed = (big_corner_distance+robotwidth)*big_corner_turn_omega;
+		big_turn_lspeed = big_corner_distance * big_corner_turn_omega;
 		left->setSpeed(big_turn_lspeed);
 		right->setSpeed(big_turn_rspeed);
+		base_turn_angle = odo->getAngle();
 	}
 	bool big_corner_dealer() {
-		if ((odo->getAngle()-base_turn_angle)<1.5){
-			if (((irlf->getDistance())<5)||(irf->getDistance()<7)) {
+		std::cout<<"turned"<<odo->getAngle()-base_turn_angle<<std::endl;
+		if ((odo->getAngle()-base_turn_angle)<-1.5){
+			if (((irlf->getDistance())<5)||(irf->getDistance()<8)) {
 				return true;
 			}
 			else {
@@ -508,8 +510,9 @@ public:
 	*/
 	int incorner(){   //0 for no corner, 1 for corner almost 90 degrees, 2 for corner almos
 		if (irf->getDistance()<=small_corner_threshold_distance) { return 1;}
+		std::cout<<"irlf:  "<<irlf->getDistance()<<std::endl;
 		if (irlf->getDistance()==100) { 
-			if(cornercnt=0) {
+			if(cornercnt>1) {
 				cornercnt++;
 			} 
 			else { 
@@ -530,18 +533,21 @@ public:
 	}
 	void parallelrun(){
 		float dt = timeDiff();
-		float error = target-estimatedistance();
+		float dis = estimatedistance();
+		float error = target-dis;
+		float dif = (error-prerror)/dt;
+		integration = integration + error*dt;
+		float dspeed = error*Kpw+dif*Kdw+integration*Kiw;
 		float irlbd = irlb->getDistance();
 		if (irlbd!=100) before_turn_distance = irlbd;
-		float dif = (error-prerror)/dt;
-		float ddif = (predif-dif)/dt;
-		float dspeed = error*K1+dif*K2+ddif*K3;
+		std::cout<<"dspeed is: "<<dspeed<<"  dt:  "<<dt<<" dis: "<<dis<<std::endl;
+		//dspeed = 0;
+		std::cout<<"error: "<<error*Kpw<<" dif: "<<dif*Kdw<<" int: "<<integration*Kiw<<std::endl;
 		left->setTarget(base_speed+dspeed);
 		right->setTarget(base_speed-dspeed);
 		left->run();
 		right->run();
 		prerror = error;
-		predif = dif;
 		current = odo->run();
 	}
 	bool parallel_to_wall() {
@@ -551,21 +557,22 @@ public:
 		float lbdis = irlb->getDistance();
 		float lfdis = irlf->getDistance();
 		std::cout<<"nowlfdis:  "<<lfdis<<",  nowlbdis:  "<<lbdis<<std::endl;
-		if ((lbdis==100) || (lfdis==100) ) {
+		if ((lbdis>10) || (lfdis>10) ) {
 			if (cw == true) {
-				setup_smoothrotate(15);
+				setup_smoothrotate(0.6);
 			}
 			else {
-				setup_smoothrotate(-15);
+				setup_smoothrotate(-0.6);
 			}
 			return false;
 		}
-		if (((lbdis-lfdis)<1.0) || ((lfdis-lbdis)<1.0)) {
+		if (((lbdis-lfdis)<0.2) && ((lfdis-lbdis)<0.2)) {
 			return true;
 		}
 		else {
-			setup_smoothrotate((lbdis-lfdis)*5);
+			setup_smoothrotate((lbdis-lfdis)*0.5);
 			return false;
 		}
+		return false;
 	}
 };
