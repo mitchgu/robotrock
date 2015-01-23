@@ -1,4 +1,5 @@
 #include <iostream>
+#include <vector>
 #include <fstream>
 #include <string>
 #include <deque>  
@@ -110,21 +111,22 @@ class Mapdealer {
 			myfile.close();
 		}
 	}
-	std::deque<Wall*>* getPolygon() {
-		std::deque<Wall*>* out=new std::deque<Wall*>;
+	std::vector<Wall> getPolygon() {
+		std::vector<Wall> out;
+
 		sort(point_dq->begin(),point_dq->end());
 
 		Point beg=**(point_dq->begin()),cur=beg;
 		do
 		{
-			std::cout<<cur.x()<<" "<<cur.y()<<std::endl;
+			//std::cout<<cur.x()<<" "<<cur.y()<<std::endl;
 			tr((*wall_dq))
 			{
 				if((*it)->s()==cur)
 				{
 					//std::cout<<"wall: "<<((*it)->xs())<<" "<<((*it)->xs())<<" "<<((*it)->xs())<<" "<<((*it)->xs())<<std::endl;
 					cur=(*it)->e();
-					out->push_back(*it);
+					out.push_back(**it);
 					wall_dq->erase(it);
 					break;
 				}
@@ -134,7 +136,7 @@ class Mapdealer {
 		//std::cout<<"wall: "<<((*it)->xs())<<std::endl;
 					cur=(*it)->s();
 					(*it)->swap();
-					out->push_back(*it);
+					out.push_back(**it);
 					wall_dq->erase(it);
 					break;
 				}
@@ -149,7 +151,12 @@ class Mapdealer {
 	std::deque<Wall*>* stack_of_wall() {
 		return wall_dq;
 	}
+	Point* getStart(){
+		return start;
+	}
 };
+/*
+
 int main() {
 	Mapdealer* map = new Mapdealer("example3.txt");
 	std::deque<Wall*>* test=map->getPolygon();
@@ -162,3 +169,4 @@ int main() {
 	}
 	return 0;
 }
+*/
