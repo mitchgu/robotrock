@@ -22,7 +22,7 @@ const float big_wall_rotate_stuck_time = 10;
 class Wallfollower {
 	IR* irlf;
 	IR* irlb;
-	IR* irlm;
+	IR* irr;
 	IR* irf;
 	mraa::Gpio* uirb;
 	//IR* irb;
@@ -322,7 +322,7 @@ public:
 				else {
 					gettimeofday(&stktv, NULL); 
 					if ((((unsigned long long)(stktv.tv_sec)*1000 +
-						(unsigned long long)(stktv.tv_usec) / 1000)-check_stuck_base_time)> *1000) {
+						(unsigned long long)(stktv.tv_usec) / 1000)-check_stuck_base_time)*1000) {
 						channel5_mode = 0;
 						return 0;
 					}
@@ -460,7 +460,7 @@ public:
 		check_stuck_base_time = (unsigned long long)(stktv.tv_sec)*1000 +
 			(unsigned long long)(stktv.tv_usec) / 1000;
 		prerror = 0;
-		predif = 0
+		predif = 0;
 		left->forward();
 		right->forward();
 		float dt = timeDiff();
@@ -530,18 +530,21 @@ public:
 	}
 	void parallelrun(){
 		float dt = timeDiff();
-		float error = target-estimatedistance();
+		float dis = estimatedistance();
+		float error = target-dis;
+		float dif = (error-prerror)/dt;
+		integration = integration + error*dt;
+		float dspeed = error*Kpw+dif*Kdw+integration*Kiw;
 		float irlbd = irlb->getDistance();
 		if (irlbd!=100) before_turn_distance = irlbd;
-		float dif = (error-prerror)/dt;
-		float ddif = (predif-dif)/dt;
-		float dspeed = error*K1+dif*K2+ddif*K3;
+		std::cout<<"dspeed is: "<<dspeed<<"  dt:  "<<dt<<" dis: "<<dis<<std::endl;
+		//dspeed = 0;
+		std::cout<<"error: "<<error*Kpw<<" dif: "<<dif*Kdw<<" int: "<<integration*Kiw<<std::endl;
 		left->setTarget(base_speed+dspeed);
 		right->setTarget(base_speed-dspeed);
 		left->run();
 		right->run();
 		prerror = error;
-		predif = dif;
 		current = odo->run();
 	}
 	bool parallel_to_wall() {
