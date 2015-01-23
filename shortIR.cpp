@@ -55,7 +55,7 @@ mraa::Aio sensorpin
 			std::cout<<"error!! too close"<<std::endl;
 			return 0.0;
 		}
-		if (voltage <= 0.350)
+		if (voltage <= 0.280)
 		{
 			std::cout<<"more that 10 in away :D"<< std::endl;
 			return 100.0;

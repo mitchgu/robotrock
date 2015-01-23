@@ -11,8 +11,8 @@
 
 //const double Kp=0.5, Ki=0.15, Kd=0.2;
 double Kp,Ki,Kd;
-double bKp=0.6, bKi=0.0, bKd=0.05;
-double smKp=0.4, smKi=0.0, smKd=0.05;
+double bKp=1.8, bKi=0.03, bKd=1.6;
+double smKp=2.8, smKi=0.03, smKd=1.6;
 //double smKp=0.4, smKi=0.0, smKd=0.05; THIS WORKS PRETTY WELL
 const double mKp=0.05, mKi=0.01, mKd=0.005;
 
@@ -28,16 +28,6 @@ protected:
 	double intError,prevError;
 	struct timeval tv;
 	bool rotating;
-	void cw()
-	{
-			l->forward();
-			r->backward();
-	}
-	void ccw()
-	{
-			r->forward();
-			l->backward();
-	}	
 	long long timeDiff()
 	{
 			unsigned long long ms = (unsigned long long)(tv.tv_sec)*1000 +
@@ -49,12 +39,11 @@ protected:
 	}
 	bool rotPID()
 	{
-		std::cout<<"rotating"<<std::endl;
 			current = odo->run();
 			currentAngle = odo->getAngle();
 			double error=(targetAngle-currentAngle);
 			long long td=timeDiff();
-			if(fabs(error)<0.02)
+			if(fabs(error)<0.05)
 			{ 
 				//std::cout<<"TURNT!\n";
 				l->stop(); r->stop();
@@ -68,8 +57,8 @@ protected:
 			//std::cout<<"setting speed "<<speed<<std::endl;
 			if(speed>0) cw();
 			else { ccw(); speed=-speed;}
-			l->setTarget(speed); r->setTarget(speed);
-			l->run(); r->run();
+			l->setSpeed(speed); r->setSpeed(speed);
+			//l->run(); r->run();
 			return false;
 	}
 	bool movPID()
@@ -103,7 +92,11 @@ public:
 		targetAngle=currentAngle = _start->theta();
 		intError=moveDistance=0;
 		rotating=false;
-		baseSpeed=1.5;
+		baseSpeed=1;
+	}
+	void setBaseSpeed(double set)
+	{
+		baseSpeed=set;
 	}
 	bool run()
 	{
@@ -115,7 +108,7 @@ public:
 	{
 		std::cout<<"ROTATING WITH "<<angle<<std::endl;
 		l->stop(); r->stop();
-		sleep(0.1);
+		usleep(100000);
 		current = odo->run();
 		currentAngle=odo->getAngle();
 		targetAngle = currentAngle + angle;
@@ -130,7 +123,7 @@ public:
 	void straight(double distance) 
 	{
 		l->stop(); r->stop();
-		sleep(0.1);
+		usleep(100000);
 		rotating=false;
 		if(distance>0)  { l->forward(); r->forward(); }
 		else  { l->backward(); r->backward(); }
@@ -152,4 +145,14 @@ public:
 	{
 		currentAngle+=angle;
 	}
+	void cw()
+	{
+			l->forward();
+			r->backward();
+	}
+	void ccw()
+	{
+			r->forward();
+			l->backward();
+	}	
 };

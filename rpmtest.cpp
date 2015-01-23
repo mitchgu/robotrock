@@ -22,13 +22,21 @@ int main()
 	//motion->rotate(1.57);	
 	left->forward();
 	right->forward();
-	left->setSpeed(1);
-	right->setSpeed(1);
-	while(running)
+	int reps=25;
+	for(double i=0.1;running&&i<=0.5;i+=0.05)
 	{
-		left->run();right->run();
-		std::cout<<"left "<<left->rps()<<" right "<<right->rps()<<std::endl;
-		usleep(1000);
+		double ravg=0,lavg=0;
+		left->writeVolt(i);
+		usleep(500000);
+		for(int j=0;running&&j<reps;j++)
+		{
+			ravg+=left->rps();
+			usleep(10000);
+		}
+		ravg/=reps;
+		std::cout<<i<<" "<<ravg<<std::endl;
+		left->stop(); right->stop();
+		sleep(1);
 	}
 	left->stop(); right->stop();
 	sleep(1);

@@ -1,4 +1,5 @@
 #include "motion.cpp"
+#include <math.h>
 #include <iostream>
 #include "shortIR.cpp"
 
@@ -9,9 +10,10 @@
 #define BGC 3
 #define LOST 0
 
+double wrKp=0.4, wrKi=0.0, wrKd=0.00;
 const double wKp=1;
 const double wfSpeed=1;
-const double frontThresh=5;
+const double frontThresh=8;
 const double sideThresh=5;
 const double alignThresh=0.2;
 
@@ -37,7 +39,6 @@ class Wallfollower {
 	void parSetup()
 	{
 		mode=PAR;
-
 	}
 	void smcSetup()
 	{
@@ -47,7 +48,9 @@ class Wallfollower {
 	void smcAlignSetup()
 	{
 		mode=SMC_align;
-		motion->rotate(-40);
+		left->stop(); right->stop();
+		usleep(100000);
+		//current = odo->run();
 	}
 	void bgcAlignSetup()
 	{
@@ -56,6 +59,7 @@ class Wallfollower {
 	void bgcSetup()
 	{
 		mode=BGC;
+		left->stop(); right->stop();
 	}
 	void lostSetup()
 	{
@@ -64,7 +68,7 @@ class Wallfollower {
 	}
 	void bgcRun()
 	{
-		motion->baseSpeed
+		//motion->baseSpeed
 	}
 	void lostRun()
 	{
@@ -73,15 +77,15 @@ class Wallfollower {
 	}
 	void parRun()
 	{
-		double f=irf->getDistance(), b=irb->getDistance();
+		double f=irlf->getDistance(), b=irlb->getDistance();
 		double e=f-b;
 		double ds=Kp*e;
 		right->setTarget(wfSpeed+ds);
 		left->setTarget(wfSpeed-ds);
 		left->run(); right->run();
-		if(irlf->getDistance()>20) mode=bgcSetup();
+		if(irlf->getDistance()>20) bgcSetup();
 		else if(irf->getDistance()<frontThresh) smcSetup();
-		else if(!nearWalls()) mode=lostSetup();
+		else if(!nearWalls()) lostSetup();
 	}
 	void smcRun()
 	{
@@ -89,8 +93,20 @@ class Wallfollower {
 	}
 	void smcAlign()
 	{
-		if(std::fabs(irlf->getDistance()-irlb->getDistance())<alignThresh) parSetup();
-		else motion->run();
+		double f=irlf->getDistance(),b=irlb->getDistance();
+		std::cout<<"front "<<f<<" back "<<b<<std::endl;
+		double e=fabs(f-b);
+		double speed = e*wrKp;
+		if(speed>0) motion->ccw();
+		else { motion->cw(); speed=-speed;}
+		left->setTarget(speed); right->setTarget(speed);
+		left->run(); right->run();
+		if(fabs(f-b)<alignThresh) 
+		{
+			left->stop(); right->stop();
+			usleep(100000);
+			parSetup();
+		}
 	}
 	void bgcAlign()
 	{
@@ -109,6 +125,7 @@ public:
 		current = _start;
 		odo = new Odometry(_l, _r, _start->x(),_start->y(),_start->theta());
 		motion = new Motion(left,right,odo,_start);
+		lostSetup();
 	}
 	void parallel()
 	{
@@ -119,6 +136,7 @@ public:
 	}
 	void run()
 	{
+		std::cout<<"Currently in mode "<<mode<<std::endl;
 		switch(mode)
 		{
 			case PAR: parRun(); break;

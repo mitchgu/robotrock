@@ -121,6 +121,7 @@ public:
 		else {return false;}
 	}
 };
+
 class Location {
 	float _x;
 	float _y;

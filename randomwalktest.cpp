@@ -23,7 +23,7 @@ int main(){
 	Randomwalk* rw= new Randomwalk(left,right,irlf,irlb,irf,irr,uirb,location);
 	int channel=1;
 	while(running ) {
-		channel = wrw->run_follower(channel);
+		channel = rw->run(channel);
 	} 
 	left->stop();
 	right->stop();

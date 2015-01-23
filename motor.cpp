@@ -10,6 +10,8 @@
 #include "i2c.cpp"
 
 #define MX 10
+#define LEFT false
+#define RIGHT true
 
 struct timeval start,end;
 
@@ -102,10 +104,10 @@ public:
 		volt=_volt;
 		volt=std::min(1.0,volt);
 		volt=std::max(0.0,volt);
-		std::cout<<"volt writing "<<volt<<std::endl;
+		//std::cout<<"volt writing "<<volt<<std::endl;
 		writePWM(i2c, ppin, volt);
 	}
-	void run()
+	double run()
 	{
 		double dt=timeDiff();
 		double e=targetRPS-rps();
@@ -115,6 +117,7 @@ public:
 		prev=e;
 		double dx=sKp*e+sKi*integ+sKd*deriv;
 		writeVolt(volt+dx);
+		return volt;
 	}
 	void setTarget(double inc)
 	{
@@ -123,7 +126,8 @@ public:
 	void setSpeed(double set)
 	{
 		targetRPS=set;
-		writeVolt(0.010624*set*(3.14*3.85)+0.01136);
+		if(side==LEFT) writeVolt(0.1489*set+0.0367);
+		else writeVolt(0.1568*set+0.0375);
 	}
 	float getSpeed() { return targetRPS; }
 	/*
