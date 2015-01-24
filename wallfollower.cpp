@@ -458,12 +458,12 @@ public:
 	void smoothrotate_run() {
 		left->run();
 		right->run();
-		current = odo->run();
+		odo->run();
 	}
 	void smoothforward_run() {
 		left->run();
 		right->run();
-		current = odo->run();
+		odo->run();
 	}
 	void setup_parallelrun() {
 		check_stuck_base_time = (unsigned long long)(stktv.tv_sec)*1000 +
@@ -499,14 +499,14 @@ public:
 				return true;
 			}
 			else {
-				current = odo->run();
+				odo->run();
 				left->run();
 				right->run();
 				return false;
 			}
 		}
 		else {
-			current = odo->run();
+			odo->run();
 			left->run();
 			right->run();
 			return false;
@@ -558,10 +558,10 @@ public:
 		left->run();
 		right->run();
 		prerror = error;
-		current = odo->run();
+		odo->run();
 	}
 	bool parallel_to_wall() {
-		current = odo->run();
+		odo->run();
 		// do parallel to wall
 		float lbdis = irlb->getDistance();
 		float lfdis = irlf->getDistance();

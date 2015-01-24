@@ -16,13 +16,15 @@ int main()
 	signal(SIGINT, sig_handler);
 	Motor* left = new Motor(0,2,4,false);
 	Motor* right = new Motor(4,6,2,true);
-	Odometry* odo = new Odometry(left, right, 0, 0, 0);
 	Location* location = new Location(0.0,0.0,0.0);
+	Odometry* odo = new Odometry(left, right, 0, 0, 0);
 
+	Motion* motion = new Motion(left,right,odo,location); 
 	//motion->rotate(1.57);	
 	left->forward();
 	right->forward();
 	int reps=25;
+	/*
 	for(double i=0.1;running&&i<=0.5;i+=0.05)
 	{
 		double ravg=0,lavg=0;
@@ -38,7 +40,16 @@ int main()
 		left->stop(); right->stop();
 		sleep(1);
 	}
+	*/
+	motion->straight(5000);
+	while(running)
+	{
+		//std::cout<<left->rps()<<" "<<right->rps()<<std::endl;
+		motion->run();
+		//left->run(); right->run();
+	}
 	left->stop(); right->stop();
+
 	sleep(1);
 	return 0;
 }

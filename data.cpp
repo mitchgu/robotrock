@@ -1,4 +1,5 @@
 #include <math.h>
+#include <iostream>
 #include <algorithm>
 #include <assert.h> 
 
@@ -140,6 +141,16 @@ public:
 		_y = yval;
 		_theta = thetaval;
 	}
+	Location(Location* other)
+	{
+		_x = other->x();
+		_y = other->y();
+		_theta = other->theta();
+	}
+	void incAngle(float inc)
+	{
+		_theta+=inc;
+	}
 	void set(float xval, float yval, float thetaval) 
 	{
 		_x = xval;
@@ -163,7 +174,7 @@ public:
 		float returntheta = theta() + inputtheta;
 		float returnx = x()+dis*sin(returntheta);
 		float returny = y()+dis*cos(returntheta);
-		returnlocation->set(returnx, returny, returntheta);
+		returnlocation = new Location(returnx, returny, returntheta);
 		return returnlocation;
 	}
 	Location* move_forward(float dis) {

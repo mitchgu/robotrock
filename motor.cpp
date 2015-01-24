@@ -160,6 +160,7 @@ public:
 		hall->isrExit();
 		//std::cout<<"delay "<<dt<<std::endl;
 		double out=4*MX/(1920.0*dt);
+		std::cout<<"Rps is "<<out<<std::endl;
 		return out;
 	}
 	double srps()

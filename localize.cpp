@@ -41,7 +41,7 @@ public:
 		//Point diff=(*at-*startLocation);
 		visPoints.pb(*at);
 		foundWall=true;
-		double distTravelled=at->abs()+robWidth/2+leftDist;
+		double distTravelled=at->abs()+(robWidth/2+leftDist)/cos(locatoin->theta());
 		std::cout<<"Left distance is "<<leftDist<<std::endl;
 		std::cout<<"At "<<at->x()<<" "<<at->y()<<std::endl;
 		std::cout<<"Travelled "<<distTravelled<<std::endl;
@@ -57,21 +57,21 @@ public:
 			double coeff=-dist/sqcoeff;
 			sqcoeff=sqrt(sqcoeff);
 			dist=fabs(dist)/sqcoeff;
-			cout<<"Could be on wall "<<it->xs()<<" "<<it->ys()<<" "<<it->xe()<<" "<<it->ye()<<"\n";
-			cout<<"Distance to wall is "<<dist<<"\n";
+			//cout<<"Could be on wall "<<it->xs()<<" "<<it->ys()<<" "<<it->xe()<<" "<<it->ye()<<"\n";
+			//cout<<"Distance to wall is "<<dist<<"\n";
 			if(distTravelled<(dist-errorMargin)) continue;
 			else if(distTravelled<dist) distTravelled=dist;
 			double fx=A*(coeff)+m, fy=B*(coeff)+n;
 			double r=sqrt(distTravelled*distTravelled-dist*dist);
 			double dx=r*B/sqcoeff, dy=-r*A/sqcoeff;
-			cout<<"foot is "<<fx<<" "<<fy<<std::endl;
+			//cout<<"foot is "<<fx<<" "<<fy<<std::endl;
 			int sign=1;
 			for(int k=0;k<2;k++)
 			{
 				double x=fx+sign*dx,y=fy+sign*dy;
-				cout<<"Could be at ("<<x<<","<<y<<") on wall "<<it->xs()<<" "<<it->ys()<<" "<<it->xe()<<" "<<it->ye()<<"\n";
 				if(x>=(min(it->xs(),it->xe())-errorMargin)&&x<=(max(it->xs(),it->xe())+errorMargin))
 				{
+					cout<<"Could be at ("<<x<<","<<y<<") on wall "<<it->xs()<<" "<<it->ys()<<" "<<it->xe()<<" "<<it->ye()<<"\n";
 					potentialLoc.pb(mp(Point(x,y),&(*it)));
 				}
 				sign*=-1;
@@ -80,6 +80,8 @@ public:
 	}
 	void atCorner(Location* cur)
 	{
+		Point* at=location->point();
+		int vs=visPoints.size();
 
 	}
 };
