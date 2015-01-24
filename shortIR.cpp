@@ -52,12 +52,12 @@ mraa::Aio sensorpin
 			0.72,0.674,0.638,0.591,0.554,0.517,0.492,0.445,0.414,0.372,0.347,0.329,0.312,0.309,0.294,0.27,0.259};
 		if (voltage >= 2.5)
 		{
-			std::cout<<"error!! too close"<<std::endl;
+			//std::cout<<"error!! too close"<<std::endl;
 			return 0.0;
 		}
 		if (voltage <= 0.280)
 		{
-			std::cout<<"more that 10 in away :D"<< std::endl;
+			//std::cout<<"more that 10 in away :D"<< std::endl;
 			return 100.0;
 		}
 		int count = 0;

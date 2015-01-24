@@ -18,10 +18,10 @@ int running=1;
 
 void sig_handler(int signo)
 {
-    if (signo == SIGINT) {
-        printf("closing PWM nicely\n");
-        running = 0;
-    }
+	if (signo == SIGINT) {
+		printf("closing PWM nicely\n");
+		running = 0;
+	}
 }
 
 int main()
@@ -62,8 +62,8 @@ int main()
 
 		//recVid<<frame;
 
-		maxFilter(frame,2);
-		pdd ret=fill(frame,2);
+		maxFilter(frame,1);
+		pdd ret=fill(frame,1);
 		double target=ret.second;
 
 		//outVid<<frame;
@@ -82,7 +82,7 @@ int main()
 	}
 
 	Motor* base = new Motor(10,11,6,false); //base motor -counterclockwise when forward
-	Motor* lift = new Motor(8,9,6,false); //lift motor
+	Motor* lift = new Motor(8,9,3,false); //lift motor
 	left->stop(); right->stop();
 	sleep(1);
 
@@ -93,8 +93,9 @@ int main()
 	while(running&&!motion->run() ) usleep(10000);
 	left->stop();
 	right->stop();
+	usleep(200000);	
 	sleep(1);
-	running=0;
+
 	if(running)
 	{
 		Servo claw(15);
@@ -102,38 +103,45 @@ int main()
 		claw.write(0.7);
 
 		lift->forward();
-		lift->setSpeed(5);
-		usleep(1700000);
-		lift->stop();
-		sleep(1);
+		lift->turnAngle(1700,5);
+		usleep(200000);	
+
+		claw.write(0.8);
+		usleep(200000);	
+
+		lift->turnAngle(215,5);
+		usleep(200000);	
 
 		claw.write(0.15);
-		sleep(1);
+		usleep(200000);	
 
 		lift->backward();
-		lift->setSpeed(5);
-		usleep(1700000);
-		lift->stop();
-		sleep(1);
+		lift->turnAngle(1950,5);
+
+		usleep(200000);	
 
 		base->forward();
-		base->turnAngle(90,3);
+		base->turnAngle(92,3);
+
+		usleep(200000);	
 
 		lift->forward();
-		lift->setSpeed(5);
-		usleep(100000);
-		lift->stop();
+		lift->turnAngle(75,5);
 
 		claw.write(0.7);
-		sleep(1);
+		usleep(200000);	
+
 
 		lift->backward();
-		lift->setSpeed(5);
-		usleep(100000);
-		lift->stop();
+		lift->turnAngle(75,5);
+
+		claw.release();
+		usleep(200000);	
+		base->backward();
+		base->turnAngle(92,3);
 	}
 
 	left->stop(); right->stop();
 	sleep(1);
-    	return 0;
+	return 0;
 }

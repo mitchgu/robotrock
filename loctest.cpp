@@ -23,18 +23,21 @@ int main(){
 	mraa::Gpio* uirb = new mraa::Gpio(8);
 	Wallfollower* wf= new Wallfollower(left,right,irf,irr,irlf,irlb,uirb,location);
 	Localize* loc=new Localize("example.txt",location);
-	int channel=1,pc=1;
+	int channel=1,mode=1,pm=1;
 	bool localized = false;
 	while(running &&!localized) {
-		pc=channel;
+		pm=mode;
 		channel = wf->run_follower(channel);
-		if(channel!=pc)
+		mode=wf->locating_channel();
+		std::cout<<"Returned channel "<<mode<<std::endl;
+		if(mode!=pm)
 		{
-			if(pc==3)
+			if(pm==3)
 			{
-				wallFound();
+				loc->wallFound(irlf->getDistance());
+				running=0;
 			}
-			else if(channel==4||channel==5)
+			else if(mode==4||mode==5)
 			{
 			}
 		}

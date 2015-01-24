@@ -4,7 +4,7 @@
 #include <string>
 #include <deque>  
 #include <algorithm>
-#include "data.cpp"
+//#include "data.cpp"
 #include <assert.h> 
 
 #define tr(i) for(typeof(i.begin()) it=i.begin(); it!=i.end(); it++) 
@@ -13,22 +13,24 @@ class Mapdealer {
 	std::deque<Point*>* point_dq; 
 	std::deque<Wall*>* wall_dq;
 	Point* start;
-	bool point_is_in_dq(Point* pt) {
-		for (std::deque<Point*>::iterator it = point_dq->begin(); it!=point_dq->end(); ++it) {
+	bool point_is_in_dq(Point* pt) 
+	{
+		for (std::deque<Point*>::iterator it = point_dq->begin(); it!=point_dq->end(); ++it) 
+		{
 			if ((*it)->equalTo(pt)) return true;
 		}
 		return false;
 	}
 	int thing_to_combine(Wall* wall) {
 		int i = 0;
-		for (std::deque<Wall*>::iterator it = wall_dq->begin(); it!=wall_dq->end(); ++it) {
+		for (std::deque<Wall*>::iterator it = wall_dq->begin(); it!=wall_dq->end(); ++it) 
+		{
 			if (wall->can_combine(*it)) return i;
 			i++;
 		}
 		return -1;
 	}
-
-	public:
+public:
 	Mapdealer(char* str) {
 		point_dq = new std::deque<Point*>();
 		wall_dq = new std::deque<Wall*>();
@@ -98,17 +100,18 @@ class Mapdealer {
 					for (int i=2; i<line.length(); i++) {
 						if (line[i] == ',') {
 							sub = line.substr(comma+1,i-comma);
-							xs = atoi( sub.c_str() );
+							xs = 24*atoi( sub.c_str() );
 							comma = i;
 						}
 					}
 					sub = line.substr(comma+1,line.length()-comma);
-					ys = atoi( sub.c_str() );
+					ys = 24*atoi( sub.c_str() );
 					cnt=0; comma = 1;
 					start = new Point(xs,ys);
 				}
 			}
 			myfile.close();
+			std::cout<<"closing file!"<<std::endl;
 		}
 	}
 	std::vector<Wall> getPolygon() {
@@ -119,7 +122,8 @@ class Mapdealer {
 		Point beg=**(point_dq->begin()),cur=beg;
 		do
 		{
-			//std::cout<<cur.x()<<" "<<cur.y()<<std::endl;
+			std::cout<<cur.x()<<" "<<cur.y()<<std::endl;
+			//if(cur.x()==120&&cur.y()==120) return out;
 			tr((*wall_dq))
 			{
 				if((*it)->s()==cur)
@@ -156,12 +160,11 @@ class Mapdealer {
 	}
 };
 /*
-
 int main() {
-	Mapdealer* map = new Mapdealer("example3.txt");
-	std::deque<Wall*>* test=map->getPolygon();
-	std::deque<Wall*>::iterator it;
-	for(it=(*test).begin();it!=(*test).end();it++) std::cout<<"wall: "<<((*it)->xs())<<" "<<((*it)->ys())<<" "<<((*it)->xe())<<" "<<((*it)->ye())<<std::endl;
+	Mapdealer* map = new Mapdealer("example2.txt");
+	std::vector<Wall> test=map->getPolygon();
+	//std::deque<Wall*>::iterator it;
+	tr(test)std::cout<<"wall: "<<((it)->xs())<<" "<<((it)->ys())<<" "<<((it)->xe())<<" "<<((it)->ye())<<std::endl;
 	std::deque<Point*>* point_dq = map->stack_of_point();
 	std::deque<Wall*>* wall_dq = map->stack_of_wall();
 	for (std::deque<Wall*>::iterator it = wall_dq->begin(); it!=wall_dq->end(); ++it) {

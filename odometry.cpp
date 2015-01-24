@@ -14,6 +14,15 @@ class Odometry {
 	struct timeval tv;
 	bool init;
 public:
+	Odometry (Motor* l, Motor* r,Location* _location)
+	{
+		left = l;
+		right = r;
+		gyr = new Gyroscope(10);
+		location=_location;
+		gyr->reset(location->theta());
+		init = false;
+	}
 	Odometry (Motor* l, Motor* r,float xval, float yval, float thetaval)
 	{
 		left = l;
@@ -43,8 +52,7 @@ run pointer=&object;
 		gettimeofday(&tv, NULL);
 		if(init) 
 		{
-			float lrps = left->rps();
-			float rrps = right->rps();
+			float lrps = left->srps(); float rrps = right->srps();
 			float speed = (lrps+rrps)* M_PI * diameter/2; //ins
 			float angle = gyr->run();
 			unsigned long long ms = (unsigned long long)(tv.tv_sec)*1000 +
@@ -57,6 +65,7 @@ run pointer=&object;
 			float x = location->x()+ (sin(angle))*distance;
 			float y = location->y()+ (cos(angle))*distance;
 			location->set(x,y,angle);
+			std::cout<<"Position "<<location->x()<<" "<<location->y()<<" "<<location->theta()<<std::endl;
 		}
 		else 
 		{

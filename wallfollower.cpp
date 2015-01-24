@@ -50,8 +50,6 @@ class Wallfollower {
 	int channel5_mode;
 	int mode;
 	int locating_return_channel;
-	Location* crossing_point;
-	Location* return_point; // the data that is going to pass to Locating class
 
 
 	void channel_stop(){
@@ -83,9 +81,10 @@ public:
 		irf = _irf;
 		uirb = _uirb;
 		//irb = _irb;
-		start = _start;
 		current = _start;
-		odo = new Odometry(_l, _r, _start->x(),_start->y(),_start->theta());
+		start=new Location(current);
+		//odo = new Odometry(_l, _r, _start->x(),_start->y(),_start->theta());
+		odo = new Odometry(_l, _r, current);
 		motion = new Motion(left,right,odo,_start);
 		corner = 0;
 		cornercnt = 0;
@@ -113,24 +112,20 @@ public:
 		if (locating_return_channel == 0) {
 			return 0;
 		}            
-		if (locating_return_channel == -1) {
+		else if (locating_return_channel == -1) {
 			locating_return_channel = 0;
 			return -1;
 		}  
-		if ((locating_return_channel !=0) &&(locating_return_channel !=(-1))) {
-			float shortside = (robotwidth/2)+estimatedistance();
-			crossing_point = current->move(shortside, -1.5708);
-			return_point = crossing_point;
-			float return_channel = locating_return_channel;
+		else 
+		{
+			int return_channel = locating_return_channel;
 			locating_return_channel = 0;
 			return return_channel;
 		}
 	}
-	Location* data() {
-		return return_point;
-	}
 
 	int run_follower(int channel) {
+			//std::cout<<"Position "<<location->x()<<" "<<location->y()<<" "<<location->theta()<<std::endl;
 		mode = channel;
 		if (channel == 0) {              //problem dealer, when you are stuck in a bad thing
 			std::cout<<"channel 0: I meat a problem "<<std::endl;
@@ -141,6 +136,7 @@ public:
 				gettimeofday(&stktv, NULL);
 				check_stuck_base_time = (unsigned long long)(stktv.tv_sec)*1000 +  (unsigned long long)(stktv.tv_usec) / 1000;
 				initialized = true;
+				locating_return_channel = -1;
 				return 0;
 			}
 			else {
@@ -151,31 +147,10 @@ public:
 				}
 				else {
 					channel_stop();
-					return 1;
-				}
-			}
-			/*
-			(((unsigned long long)(stktv.tv_sec)*1000 +
-			if(!initialized) {
-				setup_smoothrotate(10);
-				setup_back_facing_wall();
-				initialized = true;
-				locating_return_channel = -1;
-				return 0;
-			}
-			else {
-				std::cout<<"smooth rotate run!!"<<std::endl;
-				smoothrotate_run();
-				usleep(10000);
-				if (!back_facing_wall()) {
-					return 0;
-				}
-				else {
-					channel_stop();
 					locating_return_channel = 1;
 					return 1;
 				}
-			}*/
+			}
 		}
 		if (channel == 1) {               //step1 : move forward, until you see the wall
 			std::cout<<"channel 1: move forward to the wall "<<std::endl;

@@ -162,6 +162,11 @@ public:
 		double out=4*MX/(1920.0*dt);
 		return out;
 	}
+	double srps()
+	{
+		if(forw) return rps();
+		else return -rps();
+	}
 };
 
 

@@ -15,6 +15,7 @@ void sig_handler(int signo)
 int main()
 {
 	signal(SIGINT, sig_handler);
+	/*
 	Motor* base = new Motor(10,11,6,false); //base motor -counterclockwise when forward
 	Motor* lift = new Motor(8,9,3,false); //lift motor
 	Motor* left = new Motor(0,2,4,false);
@@ -65,5 +66,6 @@ int main()
 
 	claw.release();
 	sleep(1);
+	*/
 	return 0;
 }
