@@ -100,7 +100,7 @@ public:
 		if (wall_side==0) {
 			dis = irlf->getDistance();
 			std::cout<<"wall in left: "<<dis<<std::endl;
-			map->is_wall(current->move(dis,0));
+			map->is_wall(current->move(dis,-1.57));
 		}
 		else{
 			if (wall_side==1) {
@@ -112,7 +112,7 @@ public:
 				if (wall_side==2) {
 					dis = irf->getDistance();
 					std::cout<<"wall in front: "<<dis<<std::endl;
-					map->is_wall(current->move(dis,-1.57));
+					map->is_wall(current->move(dis,0));
 				}
 			}
 		}
@@ -207,7 +207,7 @@ class Planner {
 								if (!map[now_i-1][now_j].Passible()) keep_run = false;
 								else {
 									bool already_in = false;
-									for(int v = _point;v<size;v++) {
+									for(int v = point;v<size;v++) {
 										if(temp[v].equalTo(now_i-1,now_j)) already_in = true;
 									}
 									if (!already_in) {
@@ -260,7 +260,7 @@ class Planner {
 								if (!map[now_i+1][now_j].Passible()) keep_run = false;
 								else {
 									bool already_in = false;
-									for(int v = _point;v<size;v++) {
+									for(int v = point;v<size;v++) {
 										if(temp[v].equalTo(now_i+1,now_j)) already_in = true;
 									}
 									if (!already_in) {
@@ -315,7 +315,7 @@ class Planner {
 								if (!map[now_i+1][now_j].Passible()) keep_run = false;
 								else {
 									bool already_in = false;
-									for(int v = _point;v<size;v++) {
+									for(int v = point;v<size;v++) {
 										if(temp[v].equalTo(now_i+1,now_j)) already_in = true;
 									}
 									if (!already_in) {
@@ -368,7 +368,7 @@ class Planner {
 								if (!map[now_i-1][now_j].Passible()) keep_run = false;
 								else {
 									bool already_in = false;
-									for(int v = _point;v<size;v++) {
+									for(int v = point;v<size;v++) {
 										if(temp[v].equalTo(now_i-1,now_j)) already_in = true;
 									}
 									if (!already_in) {
@@ -421,10 +421,10 @@ public:
 			}
 			map.push_back(vm);
 		}
-		grid_i = 0;
-		grid_j = 0;
-		t_grid_i = 0;
-		t_grid_j = 0;
+		grid_i = -1;
+		grid_j = -1;
+		t_grid_i = -1;
+		t_grid_j = -1;
 	}
 	float plan(Location* location) { //return the angle that robot should turn
 		std::cout<<"planning"<<std::endl;
@@ -440,7 +440,9 @@ public:
 		else this_i = 11-((y/12)-0.5));
 		vector<float> v;
 		for(int i=0; i<12;i++) {
-			v.push_back(total_weight(i*30,this_i,this_j));
+			float ttw = total_weight(i*30,this_i,this_j);
+			std::cout<<"degree: "<<i*30<<"  ,total weight:  "<< ttw<<std::endl;
+			v.push_back(ttw);
 		}
 		float largest = v[0];
 		int largest_pin = 0;
@@ -450,7 +452,9 @@ public:
 				largest_pin = i;
 			}
 		}
-		return ((3.14*largest_pin/6)-location->theta());
+		std::cout<<" I plan to go in: "<<largest*30<<std::endl;
+		float real_angle = location->theta() - (int)(location->theta()/6.28);
+		return ((3.14*largest_pin/6)-real_angle);
 	}
 	void whole_update() {
 		for (int i=0; i<21;i++) {
@@ -531,7 +535,7 @@ public:
 		weight--;
 	}
 	void is_not_passible() {
-		if ((passible+0.8)>1) passible = 1;
+		if ((passible+0.8)>=1) passible = 1;
 		else passible = passible + 0.8;
 	}
 	bool Passible() {
@@ -543,7 +547,68 @@ public:
 	bool equalTo(int i_,int j_){
 		return ((i()==i_)&&(j()==j_));
 	}
-	bool inside(Grid other, float angle) {
-		
+	bool inside(Grid other, float angle) {  //this angle is in degree
+		if (angle == 0){
+			return (other.i()<=i())&&(other.j() ==j());
+		}
+		else {
+			if (angle == 90) {
+				return (other.i()==i())&&(other.j()>=j());
+			}
+			else {
+				if (angle == 180) {
+					return (other.j()==j())&&(other.i()>=i());
+				}
+				else {
+					if (agle == 270){
+						return (other.j()<=j())&&(other.i()==i());
+					}
+				}
+			}
+		}
+		if (angle<90) {
+			if ((other.j()<j())||(other.i()>i())) return false;
+			else {
+				bool i1 = ((other.j()-j()-0.5)/tan(angle*3.14/180))>(i()-other.i()-0.5);
+				bool i2 = ((other.j()-j()-0.5)/tan(angle*3.14/180))<(i()-other.i()+0.5);
+				bool i3 = ((i()-other.i()-0.5)*tan(angle*3.14/180))>(other.j()-j()-0.5);
+				bool i4 = ((i()-other.i()-0.5)*tan(angle*3.14/180))<(other.j()-j()+0.5);
+				return((i1&&i2)||(i3&&i4));
+			}
+		}
+		else {
+			if (angle<180) {
+				if ((other.j()<j())||(other.i()<i())) return false;
+				else {
+					bool i1 = ((other.j()-j()-0.5)/tan(3.14-(angle*3.14/180)))>(other.i()-i()-0.5);
+					bool i2 = ((other.j()-j()-0.5)/tan(3.14-(angle*3.14/180)))<(other.i()-i()+0.5);
+					bool i3 = ((other.i()-i()-0.5)*tan(3.14-(angle*3.14/180)))>(other.j()-j()-0.5);
+					bool i4 = ((other.i()-i()-0.5)*tan(3.14-(angle*3.14/180)))<(other.j()-j()+0.5);
+					return((i1&&i2)||(i3&&i4));
+				}
+			}
+			else {
+				if(angle<270) {
+					if ((other.j()>j())||(other.i()<i())) return false;
+					else {
+						bool i1 = ((j()-other.j()-0.5)/tan((angle*3.14/180)-3.14))>(other.i()-i()-0.5);
+						bool i2 = ((j()-other.j()-0.5)/tan((angle*3.14/180)-3.14))<(other.i()-i()+0.5);
+						bool i3 = ((other.i()-i()-0.5)*tan((angle*3.14/180)-3.14))>(j()-other.j()-0.5);
+						bool i4 = ((other.i()-i()-0.5)*tan((angle*3.14/180)-3.14))<(j()-other.j()+0.5);
+						return((i1&&i2)||(i3&&i4));
+					}
+				}
+				else{
+					if ((other.j()>j())||(other.i()>i())) return false;
+					else {
+						bool i1 = ((j()-other.j()-0.5)/tan(6.28(angle*3.14/180)))>(i()-other.i()-0.5);
+						bool i2 = ((j()-other.j()-0.5)/tan(6.28(angle*3.14/180)))<(i()-other.i()+0.5);
+						bool i3 = ((i()-other.i()-0.5)*tan(6.28(angle*3.14/180)))>(j()-other.j()-0.5);
+						bool i4 = ((i()-other.i()-0.5)*tan(6.28(angle*3.14/180)))<(j()-other.j()+0.5);
+						return((i1&&i2)||(i3&&i4));
+					}
+				}
+			}
+		}
 	}
 };
