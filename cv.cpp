@@ -61,6 +61,38 @@ void hsv(Mat& inFrame, Mat& outFrame)
 {
 	cvtColor(inFrame, outFrame, CV_BGR2HSV);
 }
+void maxFilter(Mat& frame, std::vector<int> inds)
+{
+	REP(i,frame.rows)
+	{
+		REP(j,frame.cols)
+		{
+			bool set=false;
+			Vec3b& cur =frame.at<Vec3b>(i,j);
+			for(int j=0;j<inds.size()&&!set;j++)
+			{
+				int ind=inds[j];
+				double multA,multB;
+				bool Y=false;
+				if(ind==0) multA=1.22,multB=1.5;
+				if(ind==1) multA=multB=1.2;
+				if(ind==2) multA=multB=1.2;
+				if(ind==3) Y=true,ind=1,multA=0.8,1.12;
+				if(cur[ind]>75&&cur[ind]>multA*cur[(ind+1)%3]&&cur[ind]>multB*cur[(ind+2)%3])  
+				{
+					set=true;
+					cur[ind]=255;
+					cur[(ind+1)%3]=Y?255:0;
+					cur[(ind+2)%3]=0;
+				}
+			}
+			if(!set)
+			{
+				cur[0]=cur[1]=cur[2]=0;
+			}
+		}
+	}
+}
 void maxFilter(Mat& frame, int ind, double multA=1.22, double multB=1.5)
 {
 	bool Y=false;
@@ -88,11 +120,12 @@ int** comp; std::vector<std::pair<double,double> > cents; int currentComp;
 int dimR, dimC, toti, totj;
 int dx[]={1,-1,0,0};
 int dy[]={0,0,1,-1};
-bool check(int i, int j, Mat &inFrame, int ind)
+bool check(int i, int j, Mat &inFrame)
 {
 	if(i<0||i>=dimR) return false;
 	if(j<0||j>=dimC) return false;
-	if(inFrame.at<Vec3b>(i,j)[ind]==0) return false;
+	Vec3b &cur=inFrame.at<Vec3b>(i,j);
+	if((cur[0]+cur[1]+cur[2])==0) return false;
 	if(comp[i][j]==-1) return true;	
 	return false;
 }
@@ -102,7 +135,7 @@ bool checkin(int i, int j)
 	if(j<0||j>=dimC) return false;
 	return true;
 }
-int dfs(int i, int j, Mat &inFrame, int ind)
+int dfs(int i, int j, Mat &inFrame )
 {
 	int ar=1;
 	toti+=i, totj+=j;
@@ -110,12 +143,67 @@ int dfs(int i, int j, Mat &inFrame, int ind)
 	REP(k,4)
 	{
 		int ni=i+dx[k],nj=j+dy[k];
-		if(!check(ni,nj,inFrame,ind)) continue;
-		ar+=dfs(ni,nj,inFrame,ind);
+		if(!check(ni,nj,inFrame)) continue;
+		ar+=dfs(ni,nj,inFrame);
 	}
 	return ar;
 }
-pdd fill(Mat &inFrame, int ind)
+struct centers 
+{
+	double dist;
+	double angle;
+	int type;
+};
+std::vector<centers> fill(Mat &inFrame)
+{
+	comp=new int*[inFrame.rows];
+	currentComp=0;
+	dimR=inFrame.rows, dimC=inFrame.cols;
+	//std::cout<<dimR<<" "<<dimC<<std::endl;
+	REP(i,inFrame.rows)
+	{
+		comp[i]=new int[inFrame.cols];
+		REP(j,inFrame.cols) comp[i][j]=-1;
+	}
+	std::vector<centers> out;
+	REP(i,inFrame.rows) REP(j,inFrame.cols) 
+	{
+		if(!check(i,j,inFrame)) continue;
+		toti=0,totj=0;
+		int ar=dfs(i,j,inFrame);
+		int ci=toti/((double)ar);
+		int cj=totj/((double)ar);
+		if(ar>=500) 
+		{
+			//std::cout<<"("<<ci<<", "<<cj<<"), area: "<<ar<<std::endl;
+			cents.pb(mp(ci,cj));
+			std::pair<double,double> dist=getDist(ci,cj);
+			//std::cout<<"This point is "<<dist.first<<" inches away at angle "<<dist.second<<" to the normal \n";
+			centers add;
+			add.dist=dist.first;
+			add.angle=dist.second;
+			Vec3b &cur=inFrame.at<Vec3b>(i,j);
+			if(cur[0]!=0) add.type=0;
+			else if(cur[1]!=0&&cur[2]!=0) add.type=3;
+			else if(cur[1]!=0) add.type=1;
+			else add.type=2;
+			REP(x,5) REP(y,5) 
+			{
+				int ni=ci+x,nj=cj+y;
+				if(checkin(ni,nj))
+				{
+					//std::cout<<ni<<"" <<nj<<std::endl;
+					int ind=1;
+					inFrame.at<Vec3b>(ni,nj)[ind]=0,inFrame.at<Vec3b>(ni,nj)[(ind+2)%3]=255;
+				}
+			}
+			out.push_back(add);
+		}
+		currentComp++;
+	}
+	return out;
+}
+pdd fill(Mat &inFrame,int ind)
 {
 	if(ind==3) ind=1;
 	comp=new int*[inFrame.rows];
@@ -131,9 +219,9 @@ pdd fill(Mat &inFrame, int ind)
 	pdd ret=mp(1e9,0);
 	REP(i,inFrame.rows) REP(j,inFrame.cols) 
 	{
-		if(!check(i,j,inFrame,ind)) continue;
+		if(!check(i,j,inFrame)) continue;
 		toti=0,totj=0;
-		int ar=dfs(i,j,inFrame,ind);
+		int ar=dfs(i,j,inFrame);
 		int ci=toti/((double)ar);
 		int cj=totj/((double)ar);
 		if(ar>=200) 
@@ -141,7 +229,7 @@ pdd fill(Mat &inFrame, int ind)
 			//std::cout<<"("<<ci<<", "<<cj<<"), area: "<<ar<<std::endl;
 			cents.pb(mp(ci,cj));
 			std::pair<double,double> dist=getDist(ci,cj);
-			std::cout<<"This point is "<<dist.first<<" inches away at angle "<<dist.second<<" to the normal \n";
+			//std::cout<<"This point is "<<dist.first<<" inches away at angle "<<dist.second<<" to the normal \n";
 			ret=dist;
 			REP(x,5) REP(y,5) 
 			{

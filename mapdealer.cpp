@@ -10,12 +10,12 @@
 #define tr(i) for(typeof(i.begin()) it=i.begin(); it!=i.end(); it++) 
 
 class Mapdealer {
-	std::deque<Point*>* point_dq; 
+	std::deque<cPoint*>* point_dq; 
 	std::deque<Wall*>* wall_dq;
-	Point* start;
-	bool point_is_in_dq(Point* pt) 
+	cPoint* start;
+	bool point_is_in_dq(cPoint* pt) 
 	{
-		for (std::deque<Point*>::iterator it = point_dq->begin(); it!=point_dq->end(); ++it) 
+		for (std::deque<cPoint*>::iterator it = point_dq->begin(); it!=point_dq->end(); ++it) 
 		{
 			if ((*it)->equalTo(pt)) return true;
 		}
@@ -32,7 +32,7 @@ class Mapdealer {
 	}
 public:
 	Mapdealer(char* str) {
-		point_dq = new std::deque<Point*>();
+		point_dq = new std::deque<cPoint*>();
 		wall_dq = new std::deque<Wall*>();
 		std::string line;
 		int comma=1;
@@ -64,8 +64,8 @@ public:
         			cnt=0; comma = 1;
                     std::cout<<"wall: "<<xs<<" "<<ys<<" "<<xe<<" "<<ye<<std::endl;
         			Wall* wall = new Wall(xs,ys,xe,ye);
-        			Point* starts = new Point(xs,ys);
-        			Point* ends = new Point(xe,ye);
+        			cPoint* starts = new cPoint(xs,ys);
+        			cPoint* ends = new cPoint(xe,ye);
         			bool startin = point_is_in_dq(starts);
         			bool endin = point_is_in_dq(ends);
         			if (!startin) point_dq->push_back(starts);
@@ -107,7 +107,7 @@ public:
 					sub = line.substr(comma+1,line.length()-comma);
 					ys = 24*atoi( sub.c_str() );
 					cnt=0; comma = 1;
-					start = new Point(xs,ys);
+					start = new cPoint(xs,ys);
 				}
 			}
 			myfile.close();
@@ -119,7 +119,7 @@ public:
 
 		sort(point_dq->begin(),point_dq->end());
 
-		Point beg=**(point_dq->begin()),cur=beg;
+		cPoint beg=**(point_dq->begin()),cur=beg;
 		do
 		{
 			std::cout<<cur.x()<<" "<<cur.y()<<std::endl;
@@ -149,13 +149,18 @@ public:
 
 		return out;
 	}
-	std::deque<Point*>* stack_of_point() {
+	std::deque<cPoint*>* stack_of_point() {
 		return point_dq;
+	}
+	std::vector<Wall> allWalls() {
+		std::vector<Wall> out;
+		tr((*wall_dq)) out.push_back(**it);
+		return out;
 	}
 	std::deque<Wall*>* stack_of_wall() {
 		return wall_dq;
 	}
-	Point* getStart(){
+	cPoint* getStart(){
 		return start;
 	}
 };
@@ -165,7 +170,7 @@ int main() {
 	std::vector<Wall> test=map->getPolygon();
 	//std::deque<Wall*>::iterator it;
 	tr(test)std::cout<<"wall: "<<((it)->xs())<<" "<<((it)->ys())<<" "<<((it)->xe())<<" "<<((it)->ye())<<std::endl;
-	std::deque<Point*>* point_dq = map->stack_of_point();
+	std::deque<cPoint*>* point_dq = map->stack_of_point();
 	std::deque<Wall*>* wall_dq = map->stack_of_wall();
 	for (std::deque<Wall*>::iterator it = wall_dq->begin(); it!=wall_dq->end(); ++it) {
 		std::cout<<"wall: "<<(*it)->xs()<<" "<<(*it)->ys()<<" "<<(*it)->xe()<<" "<<(*it)->ye()<<std::endl;

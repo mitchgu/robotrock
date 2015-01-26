@@ -33,7 +33,11 @@ int main()
 	VideoWriter recVid("rec.avi", CV_FOURCC('M','P','4','2'),10,outSize,true);
 	VideoWriter edgeVid("edge.avi", CV_FOURCC('M','P','4','2'),10,edgeSize,true);
 	assert(outVid.isOpened());
-
+	std::vector<int> inds;
+	inds.pb(0);
+	inds.pb(1);
+	inds.pb(2);
+	inds.pb(3);
 	for (int i = 0; i < 50; ++i) 
 	{
 		Mat in;
@@ -47,8 +51,8 @@ int main()
 		Mat emap,edge;
 		emap=canny(frame);
 
-		maxFilter(frame,2);
-		fill(frame,2);
+		maxFilter(frame,inds);
+		fill(frame,inds);
 
 		frame.copyTo(edge,emap);
 

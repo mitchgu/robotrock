@@ -1,14 +1,14 @@
 #include "motion.cpp"
 #include <iostream>
 #include "shortIR.cpp"
-const float Kpw = 0.05, Kdw = 30, Kiw = 0;
+const float Kpw = 0.05, Kdw = 35, Kiw = 0;
 const float threshelddis = 7.5; //for the first approaching to wall
 const float distance_of_irlfb = 2.0;
 const float big_corner_turn_omega = 0.08;
-const float base_speed = 1; //parallel run base speed
+const float base_speed = 1.0; //parallel run base speed
 const float slp=0.7;
 const float distance_to_wall=4.5;
-const float small_corner_rotate_angle=1.9;
+const float small_corner_rotate_angle=1.7;
 const float big_corner_rotate_angle= -1.9;
 const float robotwidth =12;
 const float rotate_stuck_time = 10;
@@ -289,7 +289,7 @@ public:
 						(unsigned long long)(stktv.tv_usec) / 1000;
 					setup_parallel_to_wall();
 					cw = false;
-					setup_smoothrotate(-1.5);
+					setup_smoothrotate(-0.6);
 					initialized = true;
 					return 4;
 				}
@@ -352,7 +352,7 @@ public:
 						(unsigned long long)(stktv.tv_usec) / 1000;
 					setup_parallel_to_wall();
 					cw = true;
-					setup_smoothrotate(1.5);
+					setup_smoothrotate(0.6);
 					initialized = true;
 					return 5;
 				}
@@ -495,7 +495,7 @@ public:
 	bool big_corner_dealer() {
 		std::cout<<"turned"<<odo->getAngle()-base_turn_angle<<std::endl;
 		if ((odo->getAngle()-base_turn_angle)<-1.5){
-			if (((irlf->getDistance())<5)||(irf->getDistance()<8)) {
+			if (((irlf->getDistance())<5)||(irf->getDistance()<9)) {
 				return true;
 			}
 			else {

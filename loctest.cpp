@@ -32,10 +32,11 @@ int main(){
 		std::cout<<"Returned channel "<<mode<<std::endl;
 		if(mode!=pm)
 		{
-			if(pm==3)
+			if(pm==3&&!localized)
 			{
 				loc->wallFound(irlf->getDistance());
 				running=0;
+				localized=true;
 			}
 			else if(mode==4||mode==5)
 			{

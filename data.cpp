@@ -3,11 +3,11 @@
 #include <algorithm>
 #include <assert.h> 
 
-class Point {
+class cPoint {
 	float _x;
 	float _y;
 public:
-	Point(float x,float y) {
+	cPoint(float x,float y) {
 		_x = x;
 		_y = y;
 	}
@@ -17,37 +17,37 @@ public:
 	float y() {
 		return _y;
 	}
-	bool operator<(Point other) {
+	bool operator<(cPoint other) {
 			if(_x==other._x) return _y<other._y;
 			return _x<other._x;
 	}
-	bool operator==(Point other) {
+	bool operator==(cPoint other) {
 		return ((x() == other.x())&&(y() == other.y()));
 	}
-	bool operator!=(Point other) {
+	bool operator!=(cPoint other) {
 		return ((x() != other.x())||(y() != other.y()));
 	}
-	bool equalTo(Point* other) {
+	bool equalTo(cPoint* other) {
 		return ((x() == other->x())&&(y() == other->y()));
 	}
-	float distance(Point* other){
+	float distance(cPoint* other){
 		return sqrt(pow((other->x()-x()),2.0)+pow((other->y()-y()),2.0));
 	}
-	float three_points_angle(Point* p1, Point* p2) {
-		float theta1 = atan((p1->x()-x())/(p1->y()-y()));
-		float theta2 = atan((p2->x()-p1->x())/(p2->y()-p1->y()));
+	float three_points_angle(cPoint* p1, cPoint* p2) {
+		float theta1 = atan2((p1->y()-y()),(p1->x()-x()));
+		float theta2 = atan2((p2->y()-p1->y()),(p2->x()-p1->x()));
 		return (theta1-theta2);
 	}
-	Point* four_points_crossing(Point* p1, Point* p2, Point* p3) {
+	cPoint* four_points_crossing(cPoint* p1, cPoint* p2, cPoint* p3) {
 		float m1 = (x()-p1->x())/(y()-p1->y());
 		float m2 = (p2->x()-p3->x())/(p2->y()-p3->y());
 		float return_x = (m1*m2*(p3->y()-y())+m2*x()-m1*p3->x())/(m2-m1);
 		float return_y = (x()-p3->x()+m2*p3->y()-m1*y())/(m2-m1);
-		Point* return_point = new Point(return_x,return_y);
+		cPoint* return_point = new cPoint(return_x,return_y);
 		return return_point;
 	}
-	Point operator-(Point other) {
-		Point out(x()-other.x(),y()-other.y());
+	cPoint operator-(cPoint other) {
+		cPoint out(x()-other.x(),y()-other.y());
 	}
 	float abs()
 	{
@@ -71,11 +71,11 @@ public:
 		wall_length = sqrt(pow((_xs-_xe),2.0)+pow((_ys-_ye),2.0));
 		wall_angle = atan(((float)(_xe-_xs))/(_ye-_ys));
 	}
-	Point s() {
-		return Point(_xs,_ys);
+	cPoint s() {
+		return cPoint(_xs,_ys);
 	}
-	Point e() {
-		return Point(_xe,_ye);
+	cPoint e() {
+		return cPoint(_xe,_ye);
 	}
 	void swap()
 	{
@@ -185,8 +185,8 @@ public:
 		return_location = new Location(return_x,return_y,return_theta);
 		return return_location;
 	}
-	Point* point() {
-		Point* pt = new Point(x(),y());
+	cPoint* point() {
+		cPoint* pt = new cPoint(x(),y());
 		return pt;
 	}
 	float distance(Location* other)

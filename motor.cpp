@@ -9,7 +9,7 @@
 #include "data.cpp"
 #include "i2c.cpp"
 
-#define MX 10
+#define MX 5
 #define LEFT false
 #define RIGHT true
 
@@ -48,7 +48,6 @@ class Motor
 	mraa::Gpio* hall;
 	bool side; //0 -left or 1-right
 	double targetRPS,integ,volt,prev;
-	bool forw;
 	struct timeval tv;
 	long long timeDiff()
 	{
@@ -119,6 +118,7 @@ public:
 		writeVolt(volt+dx);
 		return volt;
 	}
+	bool forw;
 	void setTarget(double inc)
 	{
 		targetRPS=inc;
@@ -126,8 +126,10 @@ public:
 	void setSpeed(double set)
 	{
 		targetRPS=set;
-		if(side==LEFT) writeVolt(0.1489*set+0.0367);
-		else writeVolt(0.1568*set+0.0375);
+		//if(side==LEFT) writeVolt(0.1489*set+0.0367);
+		//else writeVolt(0.1568*set+0.0375);
+		if(side==LEFT) writeVolt(0.1613*set+0.1124);
+		else writeVolt(0.2701*set+0.1828);
 	}
 	float getSpeed() { return targetRPS; }
 	/*
@@ -160,7 +162,7 @@ public:
 		hall->isrExit();
 		//std::cout<<"delay "<<dt<<std::endl;
 		double out=4*MX/(1920.0*dt);
-		std::cout<<"Rps is "<<out<<std::endl;
+		//std::cout<<"Rps is "<<out<<std::endl;
 		return out;
 	}
 	double srps()

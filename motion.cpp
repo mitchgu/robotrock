@@ -10,15 +10,15 @@
 #include "odometry.cpp"
 
 //const double Kp=0.5, Ki=0.15, Kd=0.2;
-double Kp,Ki,Kd;
-double bKp=1.8, bKi=0.03, bKd=1.6;
-double smKp=2.8, smKi=0.03, smKd=1.6;
-//double smKp=0.4, smKi=0.0, smKd=0.05; THIS WORKS PRETTY WELL
-const double mKp=1, mKi=0.0, mKd=0.00;
 
 class Motion
 {
 protected:
+	double Kp,Ki,Kd;
+	double bKp, bKi, bKd;
+	double smKp, smKi, smKd;
+	//double smKp=0.4, smKi=0.0, smKd=0.05; THIS WORKS PRETTY WELL
+	double mKp, mKi, mKd;
 	Motor *l,*r;
 	Odometry* odo;
 	Location* current;
@@ -27,7 +27,7 @@ protected:
 	double targetAngle,moveDistance;
 	double intError,prevError;
 	struct timeval tv;
-	bool rotating;
+	bool rotating,usePID,target;
 	long long timeDiff()
 	{
 			unsigned long long ms = (unsigned long long)(tv.tv_sec)*1000 +
@@ -73,26 +73,38 @@ protected:
 		intError+=td*error/1000;
 		double diffError=(error-prevError)/(td);
 		double diff = (error*mKp+intError*mKi+diffError*mKd);
+		if(!l->forw) diff=-diff;
 		//diff=0;
-		std::cout<<"diff is: "<<diff<<std::endl;
-		l->setTarget(baseSpeed+diff); r->setTarget(baseSpeed-diff);
-		l->run(); r->run();
-		float _speed = ((l->rps()+r->rps())/2)*12.095;
-		//std::cout<<_speed<<" speed "<<std::endl;
-		moveDistance = moveDistance-td*_speed/1000; return false;
+		if(usePID)
+		{
+			l->setTarget(baseSpeed+diff); r->setTarget(baseSpeed-diff);
+			l->run(); r->run();
+		}
+		else
+		{
+			std::cout<<"diff is: "<<diff<<std::endl;
+			l->setSpeed(baseSpeed+diff); r->setSpeed(baseSpeed-diff);
+		}
+		if(target)
+		{
+			double _speed = ((l->rps()+r->rps())/2)*12.095;
+			moveDistance = moveDistance-td*_speed/1000; return false;
+		}
 	}
 public:
 	Motion( Motor* _l, Motor* _r,Odometry* _odo, Location* _current) 
 	{
+		bKp=1.5, bKi=0.5, bKd=0.5;
+		smKp=3.6, smKi=0.03, smKd=1.6;
+		mKp=3, mKi=0.1, mKd=0.15;
 		l = _l;
 		r = _r;
 		odo = _odo;
 		current=_current;
 		targetAngle=currentAngle = current->theta();
 		intError=moveDistance=0;
-		rotating=false;
-		baseSpeed=1;
-		std::cout<<"motion init"<<std::endl;
+		rotating=false, usePID=false;
+		baseSpeed=0.5;
 	}
 	void setBaseSpeed(double set)
 	{
@@ -106,7 +118,6 @@ public:
 	// rotate clockwise means angle > 0
 	void rotate( double angle) 
 	{
-		std::cout<<"ROTATING WITH "<<angle<<std::endl;
 		l->stop(); r->stop();
 		usleep(100000);
 		odo->run();
@@ -120,11 +131,12 @@ public:
 		intError=0,prevError=angle;
 	}
 	// forward distance straight
-	void straight(double distance) 
+	void straight(double distance, bool useP=false)
 	{
 		l->stop(); r->stop();
 		usleep(100000);
 		rotating=false;
+		usePID=useP;
 		if(distance>0)  { l->forward(); r->forward(); }
 		else  { l->backward(); r->backward(); }
 		moveDistance=fabs(distance);
@@ -132,9 +144,13 @@ public:
 		intError=0,prevError=0;
 		odo->run();
 		currentAngle=targetAngle = odo->getAngle();
-		sleep(1);
-		usleep(100000);
 		r->setSpeed(baseSpeed); l->setSpeed(baseSpeed);
+		target=true;
+	}
+	void straight(bool useP=false)
+	{
+		straight(1000,useP);
+		target=false;
 	}
 	Location* getLocation() {
 		return current;
@@ -145,6 +161,12 @@ public:
 	void adjustAngle(double angle)
 	{
 		currentAngle+=angle;
+	}
+	void setMConstants(double _Kp,double _Ki, double _Kd)
+	{
+		mKp=_Kp;
+		mKi=_Ki;
+		mKd=_Kd;
 	}
 	void cw()
 	{
