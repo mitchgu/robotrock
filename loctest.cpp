@@ -35,11 +35,11 @@ int main(){
 			if(pm==3&&!localized)
 			{
 				loc->wallFound(irlf->getDistance());
-				running=0;
 				localized=true;
 			}
-			else if(mode==4||mode==5)
+			else if(pm==3||mode==4||mode==5)
 			{
+				loc->atCorner();
 			}
 		}
 	} 

@@ -23,7 +23,7 @@ class Localize {
 	//MonteCarlos* monte ;
 	std::vector<Wall> outerWall;
 	std::vector<cPoint> viscPoints;
-	std::vector<pair<cPoint,Wall*> > potentialLoc;
+	std::vector<std::pair<cPoint,Wall> > potentialLoc;
 public:
 	Localize(char* filename, Location *_start)
 	{
@@ -73,9 +73,14 @@ public:
 				double x=fx+sign*dx,y=fy+sign*dy;
 				if(x>=(min(it->xs(),it->xe())-errorMargin)&&x<=(max(it->xs(),it->xe())+errorMargin))
 				{
+					double angle=viscPoints[0].three_point_angle(it->s(), it->e());
+					//double angle2=viscPoints[0].point()->three_point_angle(new Point(x,y), it->e());
+					//double actAngle=fabs(location->theta()-viscPoints[0].theta());
+					//std::cout<<"Angles "<<angle1<<" "<<angle2<<" "<<actAngle<<std::endl;
+					Wall add=*it;
+					if(angle>0) add.swap();
 					cout<<"Could be at ("<<x<<","<<y<<") on wall "<<it->xs()<<" "<<it->ys()<<" "<<it->xe()<<" "<<it->ye()<<"\n";
-
-					potentialLoc.pb(mp(cPoint(x,y),&(*it)));
+					potentialLoc.pb(mp(cPoint(x,y),add));
 					if(r==0) break;
 				}
 				sign*=-1;
@@ -88,7 +93,37 @@ public:
 		int vs=viscPoints.size();
 		double angle=at->three_point_angle(viscPoints[vs-1],viscPoints[i-2]);
 		angle=fabs(angle);
-		if(angle<10)
+		if(angle<10) return;
+		double distTravelled=((*at)-viscPoints[vs-1]).abs();
+		int pl=potentialLoc.size();
+		std::vector<std::pair<cPoint,Wall> > newLoc;
+		REP(i,pl)
+		{
+			double wallDist=(potentialLoc[i].second.e()-potentialLoc[i].first).abs();
+			if(wallDist-errorMargin>distTravelled||wallDist+errorMargin<distTravelled) continue;
+			tr(outerWall)
+			{
+				if(it->s()==potentialLoc[i].second.e()&&it->e()!=potentialLoc[i].second.s())
+				{
+					potentialLoc.pb(mp(potentialLoc[i].second.e(),*it));
+				}
+				else if(it->s()==potentialLoc[i].second.e()&&it->e()!=potentialLoc[i].second.s())
+				{
+					Wall add=*it;
+					add.swap();
+					potentialLoc.pb(mp(potentialLoc[i].second.e(),add));
+				}
+			}
+		}
+		potentialLoc=newLoc;
 		viscPoints.pb(*at);
+		debug();
+	}
+	void debug()
+	{
+		REP(i,pl)
+		{
+			std::cout<<"Maybe on wall"<<potentialLoc[i].second.xs()<<"  "<<potentialLoc[i].second.ys()<<" to "<<potentialLoc[i].second.xe()<<"  "<<potentialLoc[i].second.ye()<<std::endl;
+		}
 	}
 };
