@@ -14,7 +14,7 @@ const double robFLength=7;
 const double robBLength=7;
 double errorMargin=10;
 const double pErrorMargin=0.00;
-const double angleError=0.1;
+const double angleError=0.4;
 
 
 class Localize {
@@ -66,8 +66,8 @@ public:
 			double coeff=-dist/sqcoeff;
 			sqcoeff=sqrt(sqcoeff);
 			dist=fabs(dist)/sqcoeff;
-			//std::cout<<"Could be on wall "<<it->xs()<<" "<<it->ys()<<" "<<it->xe()<<" "<<it->ye()<<"\n";
-			//std::cout<<"Distance to wall is "<<dist<<"\n";
+			std::cout<<"Could be on wall "<<it->xs()<<" "<<it->ys()<<" "<<it->xe()<<" "<<it->ye()<<"\n";
+			std::cout<<"Distance to wall is "<<dist<<"\n";
 			if(distTravelled<(dist-errorMargin)) continue;
 			else if(distTravelled<dist) distTravelled=dist;
 			double fx=A*(coeff)+m, fy=B*(coeff)+n;
@@ -80,17 +80,17 @@ public:
 			for(int k=0;k<2;k++,sign*=-1)
 			{
 				double x=fx+(sign*dx),y=fy+(sign*dy);
-				//std::cout<<"Trying be at ("<<x<<","<<y<<" "<<sign<<")\n";
+				std::cout<<"Trying be at ("<<x<<","<<y<<" "<<sign<<")\n";
 				if(x<(std::min(it->xs(),it->xe())-errorMargin)||x>(std::max(it->xs(),it->xe())+errorMargin)) continue;
 				if(y<(std::min(it->ys(),it->ye())-errorMargin)||y>(std::max(it->ys(),it->ye())+errorMargin)) continue;
 				cPoint start=it->s(),end=it->e();
 				bool cw=startLocation->clockwise(&start, &end);
-				//double angle2=viscPoints[0].point()->three_point_angle(new Point(x,y), it->e());
-				//double actAngle=fabs(location->theta()-viscPoints[0].theta());
-				//std::cout<<"Angles "<<angle1<<" "<<angle2<<" "<<actAngle<<std::endl;
-				//std::cout<<"Is clockwise? "<<cw<<std::endl;
 				Wall add=*it;
 				if(!cw) add.swap();
+				double angle=fabs(startLocation->three_points_angle(new cPoint(x,y), &end));
+				double actAngle=fabs(location->theta());
+				std::cout<<"angles are "<<angle<<" and "<<actAngle<<std::endl;
+				if(fabs(angle-actAngle)>angleError) continue;
 				std::cout<<"Could be at ("<<x<<","<<y<<") on wall "<<add.xs()<<" "<<add.ys()<<" "<<add.xe()<<" "<<add.ye()<<"\n";
 				potentialLoc.pb(mp(cPoint(x,y),add));
 				if(r==0) break;

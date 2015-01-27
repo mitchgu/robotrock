@@ -30,7 +30,7 @@ class FinalRunner
 	Motor *left, *right, *base, *lift;
 	Odometry *odo;
 	Location* location;
-	mraa::Gpio* upEnd,*rotEnd,*uirb;
+	mraa::Gpio* upEnd,*rotEnd,*uirb,*cube,*midEnd;
 	Motion* motion;
 	VideoCapture* cap;
 	Mat in,test,frame;
@@ -77,6 +77,10 @@ class FinalRunner
 			upEnd->dir(mraa::DIR_IN);
 			rotEnd=new mraa::Gpio(8);
 			rotEnd->dir(mraa::DIR_IN);
+			cube=new mraa::Gpio(0);
+			cube->dir(mraa::DIR_IN);
+			midEnd=new mraa::Gpio(1);
+			midEnd->dir(mraa::DIR_IN);
 
 			motion = new Motion(left,right,odo,location); 
 			base = new Motor(10,11,6,false); //base motor -counterclockwise when forward
@@ -128,7 +132,7 @@ class FinalRunner
 				if(lastDist<=20) 
 				{
 					goForward(20);
-					pickUp();
+					if(cube->read() ) pickUp();
 				}
 			}
 		}
@@ -178,8 +182,16 @@ class FinalRunner
 			base->forward();
 			base->setSpeed(2);
 			while(rotEnd->read()) usleep(1000);
-			base->backward();
-			base->turnAngle(87,0.5);
+
+			base->backward() ;
+			base->setSpeed(0.5);
+			while(midEnd->read()) 
+			{
+				std::cout<<midEnd<<" "<<rotEnd<<std::endl;
+				usleep(1000);
+			}
+			base->stop();
+			usleep(100000);
 
 			Servo claw(15);
 
@@ -227,8 +239,10 @@ class FinalRunner
 
 			if(type==1) base->backward();
 			else base->forward();
-			base->turnAngle(87,0.5);
-
+			base->setSpeed(0.5);
+			while(midEnd->read()) usleep(1000);
+			base->stop();
+			usleep(100000);
 			channel=1;
 		}
 		void run()
