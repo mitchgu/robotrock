@@ -24,22 +24,23 @@ int main(){
 	Wallfollower* wf= new Wallfollower(left,right,irf,irr,irlf,irlb,uirb,location);
 	Localize* loc=new Localize("example.txt",location);
 	int channel=1,mode=1,pm=1;
-	bool localized = false;
-	while(running &&!localized) {
+	bool localized = false,hitWall=false;
+	while(running&&!localized) {
 		pm=mode;
 		channel = wf->run_follower(channel);
 		mode=wf->locating_channel();
-		std::cout<<"Returned channel "<<mode<<std::endl;
+		//std::cout<<"Returned channel "<<mode<<std::endl;
 		if(mode!=pm)
 		{
-			if(pm==3&&!localized)
+			if(pm==3&&!hitWall)
 			{
 				loc->wallFound(irlf->getDistance());
-				localized=true;
+				hitWall=true;
+				//sleep(3);
 			}
 			else if(pm==3||mode==4||mode==5)
 			{
-				loc->atCorner();
+				localized=loc->atCorner(irf->getDistance(),mode);
 			}
 		}
 	} 
