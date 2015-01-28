@@ -81,7 +81,7 @@ run pointer=&object;
 		if(init) 
 		{
 			double msf=timeDiff();
-			std::cout<<"Time diff "<<msf<<std::endl;
+			//std::cout<<"Time diff "<<msf<<std::endl;
 			//angle code
 			double angle;
 			if (recv != NULL)
@@ -104,7 +104,7 @@ run pointer=&object;
 			double x = location->x()+ (sin(angle))*distance;
 			double y = location->y()+ (cos(angle))*distance;
 			location->set(x,y,angle);
-			std::cout<<"Position "<<location->x()<<" "<<location->y()<<" "<<location->theta()*180/3.14<<std::endl;
+			//std::cout<<"Position "<<location->x()<<" "<<location->y()<<" "<<location->theta()*180/3.14<<std::endl;
 		}
 		else 
 		{

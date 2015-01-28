@@ -24,6 +24,9 @@ public:
 	bool operator==(cPoint other) {
 		return ((x() == other.x())&&(y() == other.y()));
 	}
+	double operator^(cPoint other) {
+		return x()*other.y()-y()*other.x();
+	}
 	bool operator!=(cPoint other) {
 		return ((x() != other.x())||(y() != other.y()));
 	}
@@ -33,10 +36,17 @@ public:
 	float distance(cPoint* other){
 		return sqrt(pow((other->x()-x()),2.0)+pow((other->y()-y()),2.0));
 	}
-	float three_points_angle(cPoint* p1, cPoint* p2) {
-		float theta1 = atan2((p1->y()-y()),(p1->x()-x()));
-		float theta2 = atan2((p2->y()-p1->y()),(p2->x()-p1->x()));
-		return (theta1-theta2);
+	bool clockwise(cPoint* p1, cPoint* p2) {
+		cPoint A=*p1-(*this);
+		cPoint B=*p2-*p1;
+		return ((A^B)<0);
+		//float theta1 = atan2((p1->y()-y()),(p1->x()-x()));
+		//float theta2 = atan2((p2->y()-p1->y()),(p2->x()-p1->x()));
+	}
+	double three_points_angle(cPoint* p1, cPoint* p2){
+		cPoint A=*p1-(*this);
+		cPoint B=*p2-*p1;
+		return asin((A^B)/(A.abs()*B.abs()));
 	}
 	cPoint* four_points_crossing(cPoint* p1, cPoint* p2, cPoint* p3) {
 		float m1 = (x()-p1->x())/(y()-p1->y());
@@ -47,7 +57,9 @@ public:
 		return return_point;
 	}
 	cPoint operator-(cPoint other) {
+		//std::cout<<x()<<" "<<other.x()<<" "<<y()<<" "<<other.y()<<std::endl;
 		cPoint out(x()-other.x(),y()-other.y());
+		return out;
 	}
 	float abs()
 	{
@@ -70,6 +82,29 @@ public:
 		_ye = ye;
 		wall_length = sqrt(pow((_xs-_xe),2.0)+pow((_ys-_ye),2.0));
 		wall_angle = atan(((float)(_xe-_xs))/(_ye-_ys));
+	}
+	Wall (cPoint a, cPoint b)
+	{
+		_xs = a.x();
+		_ys = a.y();
+		_xe = b.x();
+		_ye = b.y();
+		wall_length = sqrt(pow((_xs-_xe),2.0)+pow((_ys-_ye),2.0));
+		wall_angle = atan(((float)(_xe-_xs))/(_ye-_ys));
+	}
+	bool operator==(Wall other)
+	{
+		if(s()==other.s()&&e()==other.e()) return true;
+		if(e()==other.s()&&s()==other.e()) return true;
+		return false;
+	}
+	bool pointLies(cPoint p)
+	{
+		if(p==s()||p==e()) return true;
+		if(fabs(((p.y()-e().y())*(p.x()-s().x()))-((p.y()-s().y())*(p.x()-e().x())))>0.001) return false;
+		if(p.x()<std::min(xs(),xe())||p.x()>std::max(xs(),xe()) ) return false;
+		if(p.y()<std::min(ys(),ye())||p.y()>std::max(ys(),ye()) ) return false;
+		return true;
 	}
 	cPoint s() {
 		return cPoint(_xs,_ys);
