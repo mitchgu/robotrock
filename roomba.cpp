@@ -3,13 +3,17 @@
 #include "shortIR.cpp"
 #include "logger.cpp"
 
-const float FORWARD_SPEED = .6;
-const float ROTATE_SPEED = 0.6;
-const float PARALLEL_DIST_TARGET = 4.5;
-const float PARALLEL_DIST_P = .2;
-const float PARALLEL_ANGLE_P = .3;
+#define 0 APPROACH
+#define 1 ALIGN
+#define 2 PARALLEL
+
+const float FORWARD_SPEED = .75;
+const float ROTATE_SPEED = .75;
+const float PARALLEL_DIST_TARGET = 5.0;
+const float PARALLEL_DIST_P = .15;
+const float PARALLEL_ANGLE_P = .2;
 const float PARALLEL_ROTATE_P = 1.0;
-const float FORWARD_SCALE_FACTOR = 1.0;
+const float FORWARD_SCALE_FACTOR = 0.75;
 
 class Roomba {
   IR* irlf;
@@ -99,40 +103,40 @@ public:
     logger.log("Left Back IR", std::to_string(lbdist));
     switch (state) {
       // State 0: Go forward ///////////////////////////////////////////////////
-      case 0: 
+      case APPROACH: 
         setMotor("left", FORWARD_SPEED);
         setMotor("right", FORWARD_SPEED);
 
-        if (fdist < 7 || rdist < 5) { // If close in front or on right
+        if (fdist < 8 || rdist < 5) { // If close in front or on right
           stop();
-          return 1;
+          return ALIGN;
         }
-        else if (lfdist < 7 && lbdist < 7) { // If left is already close to wall
+        else if (lfdist < 9) { // If left is already close to wall
           stop();
-          return 2;
+          return PARALLEL;
         }
         else { // Stay if anything else 
-          return 0;
+          return APPROACH;
         }
         return 0;
       // State 1: Rotate in place CW //////////////////////////////////////////
-      case 1: 
+      case ALIGN: 
         setMotor("left", ROTATE_SPEED);
         setMotor("right", -ROTATE_SPEED);
         
-        if (lfdist < 8 && lbdist < 9 && fdist > 15){ //If close to wall on left, clear in front
+        if (lfdist < 9 && fdist > 14){ //If close to wall on left, clear in front
           stop();
           return 2;
         }
         else if (!inRange(lfdist) && !inRange(fdist) && !inRange(rdist)){
           stop();
-          return 0;
+          return APPROACH;
         }
         else{ //Not clear or parallel to wall, keep rotating
-          return 1;
+          return ALIGN;
         }
       // State 2: Drive parallel to wall //////////////////////////////////////
-      case 2: 
+      case PARALLEL: 
 
         parallel_dist = 0.5 * lfdist + 0.5 * lbdist;
         parallel_angle = lfdist - lbdist;
@@ -141,7 +145,7 @@ public:
         //logger.log("Parallel Angle V", std::to_string(PARALLEL_ANGLE_P * parallel_angle));
 
         rotateSpeed = std::min(PARALLEL_ROTATE_P * (PARALLEL_DIST_P * (parallel_dist - PARALLEL_DIST_TARGET) + PARALLEL_ANGLE_P * parallel_angle), 2.0f);
-        forwardScale = std::max(1-FORWARD_SCALE_FACTOR*std::abs(rotateSpeed),-0.1f) * FORWARD_SPEED;
+        forwardScale = std::max(1-FORWARD_SCALE_FACTOR*std::abs(rotateSpeed),-0.0f) * FORWARD_SPEED;
 
         logger.log("Rotate Speed", std::to_string(rotateSpeed));
         logger.log("Forward Scale", std::to_string(forwardScale));
@@ -156,28 +160,16 @@ public:
 
         if (fdist < 7) { // If small corner
           stop();
-          return 1;
+          return ALIGN;
         }
         else if (!inRange(lfdist) && !inRange(lbdist)) { // If IRLF misses
           //stop();
-          return 2;
+          return PARALLEL;
         }
         else { // Stay if anything else
-          return 2;
+          return PARALLEL;
         }
       // State 3: Pivot CCW about corner ///////////////////////////////////////
-      case 3:
-
-        //setMotor("left", 0.2);
-        //setMotor("right", 1.2);
-
-        if (!inRange(lfdist) && !inRange(lbdist)){ //If passes big corner, IRLF loses wall
-          return 3;
-        }
-        else{ //If IRLF in range, has finished turning corner
-          stop();
-          return 2;
-        }
     }
   }
 

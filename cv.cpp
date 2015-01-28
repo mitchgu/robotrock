@@ -63,16 +63,17 @@ void hsv(Mat& inFrame, Mat& outFrame)
 }
 void maxFilter(Mat& frame, std::vector<int> inds)
 {
-	int* mxblue=new int[frame.cols];
+	int* mnblue=new int[frame.cols];
+	REP(i,frame.cols) mnblue[i]=frame.rows;
 	REP(i,frame.rows)
 	{
 		REP(j,frame.cols)
 		{
 			bool set=false;
 			Vec3b& cur =frame.at<Vec3b>(i,j);
-			for(int j=0;j<inds.size()&&!set;j++)
+			for(int k=0;k<inds.size()&&!set;k++)
 			{
-				int ind=inds[j];
+				int ind=inds[k];
 				double multA,multB;
 				bool Y=false;
 				if(ind==0) multA=1.22,multB=1.5;
@@ -85,6 +86,7 @@ void maxFilter(Mat& frame, std::vector<int> inds)
 					cur[ind]=255;
 					cur[(ind+1)%3]=Y?255:0;
 					cur[(ind+2)%3]=0;
+					if(ind==0) mnblue[j]=min(mnblue[j],i);
 				}
 			}
 			if(!set)
@@ -92,6 +94,12 @@ void maxFilter(Mat& frame, std::vector<int> inds)
 				cur[0]=cur[1]=cur[2]=0;
 			}
 		}
+	}
+	REP(i,frame.cols) if(mnblue[i]==frame.rows) mnblue[i]=0;
+	REP(j,frame.cols) for(int i=0;i<mnblue[j];i++) 
+	{
+		Vec3b& cur =frame.at<Vec3b>(i,j);
+		cur[0]=cur[1]=cur[2]=0;
 	}
 }
 void maxFilter(Mat& frame, int ind, double multA=1.22, double multB=1.5)

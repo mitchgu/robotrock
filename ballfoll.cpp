@@ -15,7 +15,7 @@
 #include "wallfollower.cpp"
 
 const double wThresh=6;
-const double stopChaseBall=3;
+const double stopChaseBall=5;
 
 
 int running=1;

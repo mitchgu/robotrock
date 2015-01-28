@@ -37,7 +37,7 @@ int main()
 	inds.pb(0);
 	inds.pb(1);
 	inds.pb(2);
-	inds.pb(3);
+	//inds.pb(3);
 	for (int i = 0; i < 50; ++i) 
 	{
 		Mat in;
@@ -52,7 +52,7 @@ int main()
 		emap=canny(frame);
 
 		maxFilter(frame,inds);
-		fill(frame,inds);
+		fill(frame);
 
 		frame.copyTo(edge,emap);
 
