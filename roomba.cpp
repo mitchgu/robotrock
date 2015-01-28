@@ -59,11 +59,9 @@ public:
     logger.log("Right IR", std::to_string(rdist));
     logger.log("Left Front IR", std::to_string(lfdist));
     logger.log("Left Right IR", std::to_string(lbdist));
-
-    // log all IR values
-    // log all motor values
     switch (state) {
-      case 0: // State 0: Go forward
+      // State 0: Go forward ///////////////////////////////////////////////////
+      case 0: 
         /* BEHAVIOR TO ENABLE LATER
         if (irf->getDistance() < 10) {
           left->stop();
@@ -78,23 +76,34 @@ public:
           return 0;
         }
         */
-        if (inRange(lfdist)) {
-          return 2;
-        }
-        else if (fdist < 10 || rdist < 8) {
+        if (fdist < 7 || rdist < 5) { // If close in front or on right
             return 1;
           }
-        else {
+        else if (lfdist < 7) { // If left is already close to wall
+          return 2;
+        }
+        else { // Stay if anything else 
             return 0;
         }
         return 0;
-      case 1: // State 1: Rotate in place CW
+      // State 1: Rotate in place CW ///////////////////////////////////////////
+      case 1: 
         //behavior
         return 1;
-      case 2: // State 2: Drive parallel to wall
+      // State 2: Drive parallel to wall ///////////////////////////////////////
+      case 2:
         //behavior
-        return 2;
-      case 3: // State 3: Pivot CCW about corner
+        if (fdist < 7) { // If small corner
+          return 1;
+        }
+        else if (!inRange(lfdist)) { // If IRLF misses
+          return 3;
+        }
+        else { // Stay if anything else
+          return 2;
+        }
+      // State 3: Pivot CCW about corner ///////////////////////////////////////
+      case 3:
         //behavior
         return 3;
     }
