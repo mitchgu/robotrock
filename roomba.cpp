@@ -3,6 +3,12 @@
 #include "shortIR.cpp"
 #include "logger.cpp"
 
+const float FORWARD_SPEED = 0.16;
+const float PARALLEL_DIST_TARGET = 6.0;
+const float PARALLEL_DIST_P = .2;
+const float PARALLEL_ANGLE_P = .2;
+const float ROTATE_P = 0.25;
+
 class Roomba {
   IR* irlf;
   IR* irlb;
@@ -22,10 +28,13 @@ class Roomba {
   float lfdist;
   float lbdist;
   float rdist;
+  float parallel_dist;
+  float parallel_angle;
+  float rotateSpeed;
 
 // Returns whether a sensor distance is in range.
 bool inRange(float dist) {
-  if (dist<20 && dist>1) {
+  if (dist<20) {
     return true;
   }
   return false;
@@ -34,6 +43,27 @@ bool inRange(float dist) {
 void stop() {
   left->stop();
   right->stop();
+}
+
+void setMotor(string motor, float speed) {
+  if (motor == "left") {
+    if (speed < 0) {
+      left->backward();
+    }
+    else {
+      left->forward();
+    }
+    left->setSpeed(std::abs(speed));
+  }
+  if (motor == "right") {
+    if (speed < 0) {
+      right->backward();
+    }
+    else {
+      right->forward();
+    }
+    right->setSpeed(std::abs(speed));
+  }
 }
 
 public:
@@ -63,14 +93,12 @@ public:
     logger.log("Front IR", std::to_string(fdist));
     logger.log("Right IR", std::to_string(rdist));
     logger.log("Left Front IR", std::to_string(lfdist));
-    logger.log("Left Right IR", std::to_string(lbdist));
+    logger.log("Left Back IR", std::to_string(lbdist));
     switch (state) {
       // State 0: Go forward ///////////////////////////////////////////////////
       case 0: 
-        left->forward();
-        right->forward();
-        left->setSpeed(0.25);
-        right->setSpeed(0.25);
+        setMotor("left", FORWARD_SPEED);
+        setMotor("right", FORWARD_SPEED);
 
         if (fdist < 7 || rdist < 5) { // If close in front or on right
           stop();
@@ -91,7 +119,7 @@ public:
         left->setSpeed(0.25);
         right->setSpeed(0.25);
         
-        if (lfdist < 10 && !inRange(fdist)){ //If close to wall on left, clear in front
+        if (lfdist < 8 && !inRange(fdist)){ //If close to wall on left, clear in front
           stop();
           return 2;
         }
@@ -104,7 +132,15 @@ public:
         }
       // State 2: Drive parallel to wall //////////////////////////////////////
       case 2: 
-        //behavior
+
+        parallel_dist = 0.5 * lfdist + 0.5 * lbdist;
+        parallel_angle = lfdist - lbdist;
+
+        rotateSpeed = ROTATE_P * (PARALLEL_DIST_P * (parallel_dist - PARALLEL_DIST_TARGET) + PARALLEL_ANGLE_P * parallel_angle);
+
+        setMotor("left", FORWARD_SPEED - rotateSpeed);
+        setMotor("right", FORWARD_SPEED + rotateSpeed);
+
         if (fdist < 7) { // If small corner
           stop();
           return 1;
