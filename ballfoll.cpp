@@ -15,6 +15,8 @@
 #include "wallfollower.cpp"
 
 const double wThresh=6;
+const double stopChaseBall=3;
+
 
 int running=1;
 void sig_handler(int signo)
@@ -37,7 +39,7 @@ class FinalRunner
 	std::vector<int> inds; 
 	double lastDist, target;
 	int lostCount;
-	bool ballSeen,foundBall; int type,channel;
+	int type,channel;
 	Wallfollower* wf;
 	IR *irf, *irr, *irlf, *irlb;
 	VideoWriter* outVid,*recVid;
@@ -58,7 +60,7 @@ class FinalRunner
 			irr = new IR(1);
 			irlf = new IR(3);
 			irlb = new IR(2);
-			uirb = new mraa::Gpio(8);
+			uirb = new mraa::Gpio(5);
 			left = new Motor(0,2,4,false);
 			right = new Motor(4,6,2,true);
 			odo = new Odometry(left, right, 0, 0, 0);
@@ -89,39 +91,52 @@ class FinalRunner
 			wf= new Wallfollower(left,right,irf,irr,irlf,irlb,uirb,location);
 			channel=1;
 
+			type=-1;
+
 			lift->backward(); lift->setSpeed(2);
 			while(upEnd->read() ) usleep(1000);
 			lift->stop();
 
-			ballSeen=foundBall=false;
 
 			for(int i=0;i<10;i++) cap->read(test);
 
 		}
+		bool cubeIn()
+		{
+			return !cube->read();
+		}
 		void setupChase()
 		{
 			motion->setMConstants(0.5,0.0,0.0);
-			motion->setBaseSpeed(0.75);
+			motion->setBaseSpeed(0.5);
 			motion->straight(true);
 		}
-		bool chaseBall()
+		void chaseBall()
 		{
+			std::cout<<"cube in? "<<cubeIn()<<std::endl;
 			if(!senseBall(6))
 			{
-				if(lostCount==3) lostCount=0, ballSeen=false;
+				if(lostCount==3) lostCount=0, channel=1,type=-1;
 				else
 				{
 					lostCount++;
-					goForward(-20);
+					goForward(-10);
+					setupChase();
 				}
 			}
 			else
 			{
+				if(irf->getDistance()<stopChaseBall)
+				{
+					goForward(-10);
+					channel=1;
+					return ;
+				}
 				motion->run();
 				//channel = wf->run_follower(channel);
-				if(target!=0&&fabs(target)>8)
+				if(fabs(target)>8)
 				{
-					std::cout<<"I see a a ball"<<lastDist<<" away at "<<target<<"degrees\n";
+					std::cout<<"I see a ball"<<lastDist<<" away at "<<target<<"degrees\n";
 					motion->rotate(target*3.14/180);
 					while(running&&!motion->run()) cap->read(test);
 					//goForward(lastDist+2);
@@ -132,8 +147,9 @@ class FinalRunner
 				if(lastDist<=20) 
 				{
 					goForward(20);
-					if(cube->read() ) pickUp();
-				}
+					left->stop(); right->stop();
+					if(cubeIn() ) channel=8;
+				}	
 			}
 		}
 		bool senseBall(int samps=1)
@@ -155,7 +171,7 @@ class FinalRunner
 					lastDist=ret[j].dist;
 					target=ret[j].angle;
 					type=ret[j].type;
-					std::cout<<type<<std::endl;
+					std::cout<<"Ball "<<lastDist<<" inches away at angle "<<target<<"of type "<<type<<std::endl;
 					sensed=true;
 				}
 			}
@@ -170,7 +186,7 @@ class FinalRunner
 			while(running&&!motion->run()) 
 			{
 				if(dist>0&&irf->getDistance()<wThresh) break;
-				if(dist<0&&uirb->read()) break;
+				if(dist<0&&!uirb->read()) break;
 				cap->read(in);
 			}
 			left->stop();
@@ -179,17 +195,18 @@ class FinalRunner
 		}
 		void pickUp()
 		{
+			if(!cubeIn()) return;
+			std::cout<<"Picking up type"<<type<<std::endl;
+			left->stop(); right->stop();
+			usleep(100000);
+	
 			base->forward();
 			base->setSpeed(2);
 			while(rotEnd->read()) usleep(1000);
 
 			base->backward() ;
 			base->setSpeed(0.5);
-			while(midEnd->read()) 
-			{
-				std::cout<<midEnd<<" "<<rotEnd<<std::endl;
-				usleep(1000);
-			}
+			while(midEnd->read()) usleep(1000);
 			base->stop();
 			usleep(100000);
 
@@ -198,13 +215,13 @@ class FinalRunner
 			claw.write(0.2);
 
 			lift->forward();
-			lift->turnAngle(1700,5);
+			lift->turnAngle(1700,3);
 			usleep(200000);	
 
 			claw.write(0.8);
 			usleep(200000);	
 
-			lift->turnAngle(215,5);
+			lift->turnAngle(215,3);
 			usleep(200000);	
 
 			claw.write(0.15);
@@ -247,17 +264,34 @@ class FinalRunner
 		}
 		void run()
 	   	{
+			std::cout<<"Current channel is "<<channel<<std::endl;
+			if(cubeIn()) channel=8;
 			if(channel<6)
 			{
 				channel = wf->run_follower(channel);
-				if(channel==3)
-				{
-					if(senseBall()) channel=7;
-				}
+				//if(channel==3||channel==1||channel==0)
+					if(senseBall()) 
+					{
+						left->stop(); right->stop();
+						sleep(1);
+						setupChase();
+						channel=7;
+					}
 			}
 			else if(channel==7) //seen ball 
 			{
 				chaseBall();
+			}
+			else if(channel==8)
+			{
+				if(type==-1)
+				{
+					goForward(-20);
+					sleep(5);
+					setupChase();
+					channel=7;
+				}
+			pickUp();
 			}
 		}
 		void stop()
@@ -275,15 +309,18 @@ int main()
 
 	FinalRunner* fr=new FinalRunner();
 
-	fr->pickUp();
 
 	//fr->goForward(20);
 	//fr->goForward(-20);
+/*
+	while(running) 
+	{ 
+		std::cout<<fr->cubeIn()<<std::endl;
+		if(fr->cubeIn() ) fr->pickUp(); 
+		sleep(1);
+	}*/
 
-	while(running)
-	{
-		fr->run();
-	}
+	while(running) fr->run();
 
 	fr->stop();
 

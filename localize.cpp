@@ -12,7 +12,7 @@
 const double robWidth=16;
 const double robFLength=7;
 const double robBLength=7;
-double errorMargin=10;
+double errorMargin=9;
 const double pErrorMargin=0.00;
 const double angleError=0.4;
 
@@ -87,10 +87,10 @@ public:
 				bool cw=startLocation->clockwise(&start, &end);
 				Wall add=*it;
 				if(!cw) add.swap();
-				double angle=fabs(startLocation->three_points_angle(new cPoint(x,y), &end));
-				double actAngle=fabs(location->theta());
-				std::cout<<"angles are "<<angle<<" and "<<actAngle<<std::endl;
-				if(fabs(angle-actAngle)>angleError) continue;
+				//double angle=fabs(startLocation->three_points_angle(new cPoint(x,y), &end));
+				//double actAngle=fabs(location->theta());
+				//std::cout<<"angles are "<<angle<<" and "<<actAngle<<std::endl;
+				//if(fabs(angle-actAngle)>angleError) continue;
 				std::cout<<"Could be at ("<<x<<","<<y<<") on wall "<<add.xs()<<" "<<add.ys()<<" "<<add.xe()<<" "<<add.ye()<<"\n";
 				potentialLoc.pb(mp(cPoint(x,y),add));
 				if(r==0) break;
@@ -99,8 +99,8 @@ public:
 	}
 	bool atCorner(double frontDist,int mode)
 	{
+		if(frontDist==100||mode==5) frontDist=-robFLength;
 		if(pmode==5) frontDist=-16;
-		if(frontDist==100||mode==5) frontDist=0;
 		pmode=mode;
 		cPoint* at=location->point();
 		int vs=viscPoints.size();
@@ -149,12 +149,14 @@ public:
 		potentialLoc=newLoc;
 		viscPoints.pb(*at);
 		debug();
-		if(potentialLoc.size()==1) 
+		pl=potentialLoc.size();
+		if(pl==0) return false;
+		REP(i,pl)
 		{
-			std::cout<<"I'm at "<<potentialLoc[0].second.xs()<<" "<<potentialLoc[0].second.ys()<<std::endl;
-			return true;
+			if(potentialLoc[i].first!=potentialLoc[0].first) return false;
 		}
-		return false;
+		std::cout<<"I'm at "<<potentialLoc[0].first.x()<<" "<<potentialLoc[0].first.y()<<std::endl;
+		return true;
 	}
 	void debug()
 	{
