@@ -89,14 +89,25 @@ public:
         }
         return 0;
       case 1: // State 1: Rotate in place CW
-        //behavior
-        return 1;
+        /* BEHAVIOR
+        */
+        if (lfdist < 10 && !inRange(fdist)){
+          return 2;
+        }
+        else{
+          return 1;
+        }
       case 2: // State 2: Drive parallel to wall
         //behavior
         return 2;
       case 3: // State 3: Pivot CCW about corner
         //behavior
+      if (!inRange(lfdist)){
         return 3;
+      }
+      else{
+        return 0;
+      }
     }
   }
 
