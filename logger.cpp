@@ -33,10 +33,10 @@ public:
 	Logger ()
 	{
 		time_start = getmsofday();
-		text_file = "loggers/" + currentDateTime() + ".txt";
+		text_file = "logs/" + currentDateTime() + ".txt";
 		ofstream logging;
-		logging.open(text_file.c_str());
-		logging.close();
+		//logging.open(text_file.c_str());
+		//logging.close();
 	}
 
 	void log (string name, string val)
@@ -46,13 +46,7 @@ public:
 		long long time_current = getmsofday();
 		logging << time_current - time_start << " " << name << ": " << val << endl;
 		cout << time_current - time_start << " " << name << ": " << val << endl;
-		logging.close();
+		//logging.close();
 	}
 
 } ;
-
-main () {
-	Logger log_test;
-	log_test.log("IR1", "10");
-	log_test.log("IR2", "20");
-}

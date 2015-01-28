@@ -1,6 +1,7 @@
 #include "motion.cpp"
 #include <iostream>
 #include "shortIR.cpp"
+#include "logger.cpp"
 
 class Roomba {
   IR* irlf;
@@ -15,16 +16,31 @@ class Roomba {
   Location* start;
   Location* current;
   Motion* motion;
+  Logger logger;
+
+  float fdist;
+  float lfdist;
+  float lbdist;
+  float rdist;
+
+// Returns whether a sensor distance is in range.
+bool inRange(float dist) {
+  if (dist<20 && dist>1) {
+    return true;
+  }
+  return false;
+}
 
 public:
-  Roomba(Motor* _l, Motor* _r, IR* _irf, IR* _irr, IR* _irlf, IR* _irlb, mraa::Gpio* _uirb, Location* _start) {
+  Roomba(Motor* _l, Motor* _r, IR* _irf, IR* _irr, IR* _irlf, IR* _irlb, mraa::Gpio* _uirb, Location* _start, Logger _logger) {
     left = _l;
     right = _r;
     irlf = _irlf;
     irlb = _irlb;
     irr = _irr;
     irf = _irf;
-    uirb = _uirb;
+    uirb = _uirb; 
+    logger = _logger;
 
     current = _start;
     start=new Location(current);
@@ -34,23 +50,53 @@ public:
   }
 
   int step(int state) {
-    if (state == 0) {
-      if (irf->getDistance() < 10) {
-        left->stop();
-        right->stop();
-        return 1;
-      }
-      else {
-        left->forward();
-        right->forward();
-        left->setSpeed(0.25);
-        right->setSpeed(0.25);
+    fdist = irf->getDistance();
+    lfdist = irlf->getDistance();
+    lbdist = irlb->getDistance();
+    rdist = irr->getDistance();
+    logger.log("Roomba State", std::to_string(state));
+    logger.log("Front IR", std::to_string(fdist));
+    logger.log("Right IR", std::to_string(rdist));
+    logger.log("Left Front IR", std::to_string(lfdist));
+    logger.log("Left Right IR", std::to_string(lbdist));
+
+    // log all IR values
+    // log all motor values
+    switch (state) {
+      case 0: // State 0: Go forward
+        /* BEHAVIOR TO ENABLE LATER
+        if (irf->getDistance() < 10) {
+          left->stop();
+          right->stop();
+          return 1;
+        }
+        else {
+          left->forward();
+          right->forward();
+          left->setSpeed(0.25);
+          right->setSpeed(0.25);
+          return 0;
+        }
+        */
+        if (inRange(lfdist)) {
+          return 2;
+        }
+        else if (fdist < 10 || rdist < 8) {
+            return 1;
+          }
+        else {
+            return 0;
+        }
         return 0;
-      }
-    }
-    if (state == 1) {
-      //do nothing
-      return 1;
+      case 1: // State 1: Rotate in place CW
+        //behavior
+        return 1;
+      case 2: // State 2: Drive parallel to wall
+        //behavior
+        return 2;
+      case 3: // State 3: Pivot CCW about corner
+        //behavior
+        return 3;
     }
   }
 

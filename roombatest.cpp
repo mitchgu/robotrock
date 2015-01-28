@@ -12,6 +12,7 @@ void sig_handler(int signo)
 
 int main(){
   signal(SIGINT, sig_handler);
+  Logger logger;
   Motor* left = new Motor(0,2,4,false);
   Motor* right = new Motor(4,6,2,true);
   Location* location = new Location(0.0,0.0,0.0);
@@ -20,7 +21,7 @@ int main(){
   IR* irlf = new IR(3);
   IR* irlb = new IR(2);
   mraa::Gpio* uirb = new mraa::Gpio(8);
-  Roomba* roomba= new Roomba(left,right,irf,irr,irlf,irlb,uirb,location);
+  Roomba* roomba= new Roomba(left,right,irf,irr,irlf,irlb,uirb,location,logger);
   int state=0;
   //bool localized = false;
   while(running) {// &&!localized) {
