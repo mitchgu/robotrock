@@ -63,6 +63,7 @@ void hsv(Mat& inFrame, Mat& outFrame)
 }
 void maxFilter(Mat& frame, std::vector<int> inds)
 {
+	int* mxblue=new int[frame.cols];
 	REP(i,frame.rows)
 	{
 		REP(j,frame.cols)

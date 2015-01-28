@@ -25,6 +25,7 @@ int main(){
   //bool localized = false;
   while(running) {// &&!localized) {
     state = roomba->step(state);
+    usleep(100*1000);
     //int mode=wf->locating_channel();
   } 
   left->stop();

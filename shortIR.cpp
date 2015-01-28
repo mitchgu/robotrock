@@ -65,6 +65,13 @@ mraa::Aio sensorpin
 		{}
 		return (distance[count-1]*(voltage-svoltage[count])+distance[count]*(svoltage[count-1]-voltage))/(svoltage[count-1]-svoltage[count]);
 	}
+
+	bool inRange() {
+		if (getDistance() <= 20 && getDistance() >0) {
+			return true;
+		}
+		return false;
+	}
 };
 
 /*

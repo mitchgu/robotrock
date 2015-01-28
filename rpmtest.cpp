@@ -28,25 +28,24 @@ int main()
 	for(double i=0.1;running&&i<=0.5;i+=0.05)
 	{
 		double ravg=0,lavg=0;
-		left->writeVolt(i);
+		right->writeVolt(i);
 		usleep(500000);
 		for(int j=0;running&&j<reps;j++)
 		{
-			ravg+=left->rps();
+			ravg+=right->rps();
 			usleep(10000);
 		}
 		ravg/=reps;
-		std::cout<<i<<" "<<ravg<<std::endl;
+		std::cout<<ravg<<std::endl;
 		left->stop(); right->stop();
 		sleep(1);
 	}
 	*/
-	motion->straight(5000);
-	while(running)
+	motion->straight(true);
+	while(running) 
 	{
-		//std::cout<<left->rps()<<" "<<right->rps()<<std::endl;
 		motion->run();
-		//left->run(); right->run();
+		usleep(100000);
 	}
 	left->stop(); right->stop();
 

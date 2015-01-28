@@ -2,23 +2,25 @@
 #include <iostream>
 #include "shortIR.cpp"
 const float Kpw = 0.05, Kdw = 35, Kiw = 0;
-const float threshelddis = 8; //for the first approaching to wall
+const float threshelddis = 9; //for the first approaching to wall
 const float distance_of_irlfb = 2.0;
 const float big_corner_turn_omega = 0.08;
 const float base_speed = 1.0; //parallel run base speed
 const float slp=0.7;
-const float distance_to_wall=4.5;
+const float distance_to_wall=5.5;
 const float small_corner_rotate_angle=1.55;
 const float big_corner_rotate_angle= -1.9;
 const float robotwidth =12;
 const float rotate_stuck_time = 10;
 const float parallel_run_stuck_time = 15;
 const float forward_stuck_time = 15;
-const float small_corner_threshold_distance=7.0;
+const float small_corner_threshold_distance=9.0;
 const float big_corner_constant = 0.7;
 const float small_corner_turn_stuck_time = 10;
 const float big_wall_rotate_stuck_time = 10;
-const float parallel_to_wall_speed=0.5;
+const float parallel_to_wall_speed=0.6;
+const float diff_threshold = 0.20;
+const float turning_const = 0.3;
 
 class Wallfollower {
 	IR* irlf;
@@ -108,6 +110,10 @@ public:
 	return 5 return large angle turning point
 	return 6 return after corner point
 	*/
+	void unInit()
+	{
+		initialized=false;
+	}
 
 	int locating_channel() {
 		if (locating_return_channel == 0) {
@@ -126,6 +132,7 @@ public:
 	}
 
 	int run_follower(int channel) {
+		//std::cout<<"IN CHANNEL"<<channel<<std::endl;
 			//std::cout<<"Position "<<location->x()<<" "<<location->y()<<" "<<location->theta()<<std::endl;
 		mode = channel;
 		if (channel == 0) {              //problem dealer, when you are stuck in a bad thing
@@ -495,7 +502,7 @@ public:
 	bool big_corner_dealer() {
 		//std::cout<<"turned"<<odo->getAngle()-base_turn_angle<<std::endl;
 		if ((odo->getAngle()-base_turn_angle)<-1.5){
-			if (((irlf->getDistance())<5)||(irf->getDistance()<9)) {
+			if (((irlf->getDistance())<7)||(irf->getDistance()<9)) {
 				return true;
 			}
 			else {
@@ -580,11 +587,11 @@ public:
 			}
 			return false;
 		}
-		if (((lbdis-lfdis)<0.1) && ((lfdis-lbdis)<0.1)) {
+		if (((lbdis-lfdis)<diff_threshold) && ((lfdis-lbdis)<diff_threshold)) {
 			return true;
 		}
 		else {
-			setup_smoothrotate((lbdis-lfdis)*0.7);
+			setup_smoothrotate((lbdis-lfdis)*turning_const);
 			return false;
 		}
 		return false;

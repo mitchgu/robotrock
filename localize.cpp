@@ -116,7 +116,7 @@ public:
 		REP(i,pl)
 		{
 			double wallDist=(potentialLoc[i].second.e()-potentialLoc[i].first).abs();
-			//if(vs==2) wallDist+=robBLength;
+			if(vs==2) wallDist+=robBLength;
 			std::cout<<"Checking on wall"<<potentialLoc[i].second.xs()<<"  "<<potentialLoc[i].second.ys()<<" to "<<potentialLoc[i].second.xe()<<"  "<<potentialLoc[i].second.ye()<<std::endl;
 			std::cout<<"Wall dist"<<wallDist<<std::endl;
 			if(wallDist-errorMargin>distTravelled||wallDist+errorMargin<distTravelled) continue;

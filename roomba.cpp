@@ -35,12 +35,23 @@ public:
 
   int step(int state) {
     if (state == 0) {
-      std::cout<<"Front: "<<irf->getDistance()<std::endl;
-      std::cout<<"Right: "<<irf->getDistance()<std::endl;
-      std::cout<<"Left-front: "<<irlf->getDistance()<std::endl;
-      std::cout<<"Left-back: "<<irlb->getDistance()<std::endl;
+      if (irf->getDistance() < 10) {
+        left->stop();
+        right->stop();
+        return 1;
+      }
+      else {
+        left->forward();
+        right->forward();
+        left->setSpeed(0.25);
+        right->setSpeed(0.25);
+        return 0;
+      }
     }
-    return 0;
+    if (state == 1) {
+      //do nothing
+      return 1;
+    }
   }
 
-}
+};

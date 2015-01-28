@@ -14,7 +14,7 @@
 #include "servo.cpp"
 #include "wallfollower.cpp"
 
-const float run_time = 1.0;
+const float run_time = 1.5;
 int running=1;
 
 void sig_handler(int signo)

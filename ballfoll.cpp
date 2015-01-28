@@ -116,7 +116,11 @@ class FinalRunner
 			std::cout<<"cube in? "<<cubeIn()<<std::endl;
 			if(!senseBall(6))
 			{
-				if(lostCount==3) lostCount=0, channel=1,type=-1;
+				if(lostCount==3) 
+				{
+					lostCount=0, channel=1,type=-1;
+					wf->unInit();
+				}
 				else
 				{
 					lostCount++;
@@ -130,6 +134,7 @@ class FinalRunner
 				{
 					goForward(-10);
 					channel=1;
+					wf->unInit();
 					return ;
 				}
 				motion->run();
@@ -261,6 +266,7 @@ class FinalRunner
 			base->stop();
 			usleep(100000);
 			channel=1;
+			wf->unInit();
 		}
 		void run()
 	   	{

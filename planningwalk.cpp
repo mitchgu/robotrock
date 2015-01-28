@@ -4,11 +4,20 @@
 #include "motion.cpp"
 #include <math.h>
 const float slp = 0.5;
-const float forward_speed = 1.2;
+const float forward_speed = 1.0;
 const float forward_side_dis_threshold = 12;
 const float forward_front_dis_threshold = 10;
 const float block_size = 3.5;
+const float grid_size = 16;
+const float size_of_field = 21;//grid*grid ,48 means 49 *49
+const float middle_of_field = (size_of_field-1)/2;
+const float probability_decrease_const=1; //every plan, how much probability it decreased
+const float passible_const = 0.3; //if it is passible, how much probability I have to times
+const float passible_threshold = 0.6; //how much is count as passible
+const float not_passible_const = 0.8; //if it is a wall, how much possibility you add to it
 const float camera_center =24; //24 inch away from the center of the robot
+const float start_weight = 4;
+const float stuck_threshold = 7;
 class Grid {
 	float x_center;
 	float y_center;
@@ -21,7 +30,7 @@ public:
 		passible = 0;
 		x_center = _x_center;
 		y_center = _y_center;
-		weight = 5;
+		weight = start_weight;
 		myi = _i;
 		myj = _j;
 	}
@@ -31,20 +40,20 @@ public:
 	float y() {return y_center;}
 	int w() {return weight;}
 	void more_passible() {
-		passible = passible*0.8;
+		passible = passible*probability_decrease_const;
 	}
 	void is_passible() {
-		passible = passible/3;
+		passible = passible*passible_const;
 	}
 	void update() {
 		weight--;
 	}
 	void is_not_passible() {
-		if ((passible+0.8)>=1) passible = 1;
-		else passible = passible + 0.8;
+		if ((passible+not_passible_const)>=1) passible = 1;
+		else passible = passible + not_passible_const;
 	}
 	bool Passible() {
-		return (passible<0.6);
+		return (passible<passible_threshold);
 	}
 	float dis(Grid other){
 		return sqrt(pow((other.x()-x()),2.0)+pow((other.y()-y()),2.0))+2;
@@ -138,8 +147,8 @@ class Planner {
 					for(int k = point; k<size; k++) {
 						total = total+temp[k].w()/temp[0].dis(temp[k]);
 						now_i = temp[k].i(); now_j = temp[k].j();
-						std::cout<<"now_i: "<<now_i<<",now_j: "<<now_j<<std::endl;
-						if ((now_j+1)<21 && (now_i-1>=0)) {
+						std::cout<<"now_i: "<<now_i<<",now_j: "<<now_j<<", weight: "<<temp[k].w()<<std::endl;
+						if ((now_j+1)<size_of_field && (now_i-1>=0)) {
 							if (temp[0].inside(map[now_i-1][now_j],angle)) {
 								//std::cout<<"inside?"<<std::endl;
 								if (!map[now_i-1][now_j].Passible()) keep_run = false;
@@ -195,8 +204,8 @@ class Planner {
 					for(int k = point; k<size; k++) {
 						total = total+temp[k].w()/temp[0].dis(temp[k]);
 						now_i = temp[k].i(); now_j = temp[k].j();
-						std::cout<<"now_i: "<<now_i<<",now_j: "<<now_j<<std::endl;
-						if ((now_j+1)<21 && (now_i+1<21)) {
+						std::cout<<"now_i: "<<now_i<<",now_j: "<<now_j<<", weight: "<<temp[k].w()<<std::endl;
+						if ((now_j+1)<size_of_field && (now_i+1<size_of_field)) {
 							if (temp[0].inside(map[now_i+1][now_j],angle)) {
 								if (!map[now_i+1][now_j].Passible()) keep_run = false;
 								else {
@@ -251,8 +260,8 @@ class Planner {
 					for(int k = point; k<size; k++) {
 						total = total+temp[k].w()/temp[0].dis(temp[k]);
 						now_i = temp[k].i(); now_j = temp[k].j();
-						std::cout<<"now_i: "<<now_i<<",now_j: "<<now_j<<std::endl;
-						if ((now_j-1)>=0 && (now_i+1<21)) {
+						std::cout<<"now_i: "<<now_i<<",now_j: "<<now_j<<", weight: "<<temp[k].w()<<std::endl;
+						if ((now_j-1)>=0 && (now_i+1<size_of_field)) {
 							if (temp[0].inside(map[now_i+1][now_j],angle)) {
 								if (!map[now_i+1][now_j].Passible()) keep_run = false;
 								else {
@@ -305,7 +314,7 @@ class Planner {
 					for(int k = point; k<size; k++) {
 						total = total+temp[k].w()/temp[0].dis(temp[k]);
 						now_i = temp[k].i(); now_j = temp[k].j();
-						std::cout<<"now_i: "<<now_i<<",now_j: "<<now_j<<std::endl;
+						std::cout<<"now_i: "<<now_i<<",now_j: "<<now_j<<", weight: "<<temp[k].w()<<std::endl;
 						if ((now_j-1)>=0 && (now_i-1>=0)) {
 							if (temp[0].inside(map[now_i-1][now_j],angle)) {
 								if (!map[now_i-1][now_j].Passible()) keep_run = false;
@@ -357,10 +366,10 @@ class Planner {
 	}
 public:
 	Planner() {
-		for (int i=0; i<21;i++) {
+		for (int i=0; i<size_of_field;i++) {
 			std::vector<Grid> vm;
-			for (int j=0; j<21; j++) {
-				Grid g((j-11)*12,(11-i)*12,i,j);
+			for (int j=0; j<size_of_field; j++) {
+				Grid g((j-middle_of_field)*grid_size,(middle_of_field-i)*grid_size,i,j);
 				vm.push_back(g);      //i is row, j is column
 			}
 			map.push_back(vm);
@@ -378,10 +387,10 @@ public:
 		float x = location->x();
 		float y = location->y();
 		int this_i; int this_j;
-		if (x>0) this_j = ((int) ((x/12)+0.5))+10;
-		else this_j = ((int) ((x/12)-0.5))+10;
-		if (y>0) this_i = 10-(int)((y/12)+0.5);
-		else this_i = 10-(int)((y/12)-0.5);
+		if (x>0) this_j = ((int) ((x/grid_size)+0.5))+middle_of_field;
+		else this_j = ((int) ((x/grid_size)-0.5))+middle_of_field;
+		if (y>0) this_i = middle_of_field-(int)((y/grid_size)+0.5);
+		else this_i = middle_of_field-(int)((y/grid_size)-0.5);
 		std::vector<float> v;
 		for(int i=0; i<12;i++) {
 			float ttw = total_weight(i*30,this_i,this_j);
@@ -401,8 +410,8 @@ public:
 		return ((3.14*largest_pin/6)-real_angle);
 	}
 	void whole_update() {
-		for (int i=0; i<21;i++) {
-			for (int j=0; j<21; j++) {
+		for (int i=0; i<size_of_field;i++) {
+			for (int j=0; j<size_of_field; j++) {
 				map[i][j].more_passible();
 			}
 		}
@@ -413,19 +422,19 @@ public:
 		int this_j;
 		float x = location->x();
 		float y = location->y();
-		if (x>0) this_j = ((int) ((x/12)+0.5))+10;
-		else this_j = ((int) ((x/12)-0.5))+10;
-		if (y>0) this_i = 10-(int)((y/12)+0.5);
-		else this_i = 10-(int)((y/12)-0.5);
+		if (x>0) this_j = ((int) ((x/grid_size)+0.5))+middle_of_field;
+		else this_j = ((int) ((x/grid_size)-0.5))+middle_of_field;
+		if (y>0) this_i = middle_of_field-(int)((y/grid_size)+0.5);
+		else this_i = middle_of_field-(int)((y/grid_size)-0.5);
 		Location* update = location->move(dis,angle);
 		int update_i;
 		int update_j;
 		float _x = update->x();
 		float _y = update->y();
-		if (_x>0) update_j = ((int) ((_x/12)+0.5))+10;
-		else update_j = ((int) ((_x/12)-0.5))+10;
-		if (_y>0) update_i = 10-(int)((_y/12)+0.5);
-		else update_i = 10-(int)((_y/12)-0.5);
+		if (_x>0) update_j = ((int) ((_x/grid_size)+0.5))+middle_of_field;
+		else update_j = ((int) ((_x/grid_size)-0.5))+middle_of_field;
+		if (_y>0) update_i = middle_of_field-(int)((_y/grid_size)+0.5);
+		else update_i = middle_of_field-(int)((_y/grid_size)-0.5);
 		int return_i;
 		int return_j;
 		if ((update_i == this_i)&&(update_j == this_j)) {
@@ -447,10 +456,10 @@ public:
 		int this_j;
 		float _x = location->x();
 		float _y = location->y();
-		if (_x>0) this_j = ((int) ((_x/12)+0.5))+10;
-		else this_j = ((int) ((_x/12)-0.5))+10;
-		if (_y>0) this_i = 10-(int)((_y/12)+0.5);
-		else this_i = 10-(int)((_y/12)-0.5);
+		if (_x>0) this_j = ((int) ((_x/grid_size)+0.5))+middle_of_field;
+		else this_j = ((int) ((_x/grid_size)-0.5))+middle_of_field;
+		if (_y>0) this_i = middle_of_field-(int)((_y/grid_size)+0.5);
+		else this_i = middle_of_field-(int)((_y/grid_size)-0.5);
 		if ((this_i != t_grid_i)||(this_j != t_grid_j)) {
 			map[this_i][this_j].is_passible();
 			t_grid_i = this_i;
@@ -462,10 +471,10 @@ public:
 		int update_j;
 		float x = update->x();
 		float y = update->y();
-		if (x>0) update_j = ((int) ((x/12)+0.5))+10;
-		else update_j = ((int) ((x/12)-0.5))+10;
-		if (y>0) update_i = 10-(int)((y/12)+0.5);
-		else update_i = 10-(int)((y/12)-0.5);
+		if (x>0) update_j = ((int) ((x/grid_size)+0.5))+middle_of_field;
+		else update_j = ((int) ((x/grid_size)-0.5))+middle_of_field;
+		if (y>0) update_i = middle_of_field-(int)((y/grid_size)+0.5);
+		else update_i = middle_of_field-(int)((y/grid_size)-0.5);
 		if ((update_i != grid_i)||(update_j != grid_j)) {
 			map[update_i][update_j].update();
 			std::cout<<"I update: "<<update_i<<" "<<update_j<<std::endl;
@@ -488,6 +497,8 @@ class Planningwalk {
 	Location* start;
 	Location* current;
 	Planner* map;
+	struct timeval stktv;
+	float check_stuck_base_time;
 	bool initialized;
 	bool r_init; bool l_init; int f_cnt; Location* l_start; Location* r_start; int wall_side; //wallside: 0:left; 1:right; 2:front
 	bool end_turn;
@@ -504,12 +515,45 @@ public:
 		map = new Planner();
 	}
 	int run(int channel){
+		if (channel == 0) {              //problem dealer, when you are stuck in a bad thing
+			std::cout<<"channel 0: I meat a problem "<<std::endl;
+			std::cout<<"channel 0: I meat a problem "<<std::endl;
+			std::cout<<"channel 0: I meat a problem "<<std::endl;
+			if (!initialized) {
+				left->backward();
+				right->backward();
+				left->setSpeed(0.7);
+				right->setSpeed(0.7);
+				gettimeofday(&stktv, NULL);
+				check_stuck_base_time = (unsigned long long)(stktv.tv_sec)*1000 +  (unsigned long long)(stktv.tv_usec) / 1000;
+				initialized = true;
+				return 0;
+			}
+			else {
+				gettimeofday(&stktv,NULL);
+				if(((unsigned long long)(stktv.tv_sec)*1000 +  (unsigned long long)(stktv.tv_usec) / 1000)-check_stuck_base_time<500) {
+					left->run();
+					right->run();
+					odo->run();
+					return 0;
+				}
+				else {
+					channel_stop();
+					return 2;
+				}
+			}
+		}
 		if (channel == 1) {
 			if (!initialized) {
 				forward_setup();
 				return 1;
 			}
-			else {
+			else{
+				gettimeofday(&stktv,NULL);
+				if(((unsigned long long)(stktv.tv_sec)*1000 +  (unsigned long long)(stktv.tv_usec) / 1000)-check_stuck_base_time>stuck_threshold*1000) {
+					initialized = false;
+					return 0;
+				}
 				if(!forward_next()){
 					forward_run();
 					return 1;
@@ -544,6 +588,8 @@ public:
 		sleep (slp);
 	}
 	void forward_setup() {
+		gettimeofday(&stktv,NULL);
+		check_stuck_base_time = (unsigned long long)(stktv.tv_sec)*1000 +  (unsigned long long)(stktv.tv_usec) / 1000;
 		left->forward();
 		right->forward();
 		left->setSpeed(forward_speed);
