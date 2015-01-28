@@ -3,12 +3,13 @@
 #include "shortIR.cpp"
 #include "logger.cpp"
 
-const float FORWARD_SPEED = .4;
-const float ROTATE_SPEED = 0.5;
-const float PARALLEL_DIST_TARGET = 5.0;
+const float FORWARD_SPEED = .6;
+const float ROTATE_SPEED = 0.6;
+const float PARALLEL_DIST_TARGET = 4.5;
 const float PARALLEL_DIST_P = .2;
-const float PARALLEL_ANGLE_P = .2;
-const float PARALLEL_ROTATE_P = 0.35;
+const float PARALLEL_ANGLE_P = .3;
+const float PARALLEL_ROTATE_P = 1.0;
+const float FORWARD_SCALE_FACTOR = 1.0;
 
 class Roomba {
   IR* irlf;
@@ -32,6 +33,7 @@ class Roomba {
   float parallel_dist;
   float parallel_angle;
   float rotateSpeed;
+  float forwardScale;
 
 // Returns whether a sensor distance is in range.
 bool inRange(float dist) {
@@ -118,7 +120,7 @@ public:
         setMotor("left", ROTATE_SPEED);
         setMotor("right", -ROTATE_SPEED);
         
-        if (lfdist < 9 && lbdist < 9 && fdist > 15){ //If close to wall on left, clear in front
+        if (lfdist < 8 && lbdist < 9 && fdist > 15){ //If close to wall on left, clear in front
           stop();
           return 2;
         }
@@ -135,21 +137,30 @@ public:
         parallel_dist = 0.5 * lfdist + 0.5 * lbdist;
         parallel_angle = lfdist - lbdist;
 
-        logger.log("Parallel Dist V", std::to_string(PARALLEL_DIST_P * (parallel_dist - PARALLEL_DIST_TARGET)));
-        logger.log("Parallel Angle V", std::to_string(PARALLEL_ANGLE_P * parallel_angle));
+        //logger.log("Parallel Dist V", std::to_string(PARALLEL_DIST_P * (parallel_dist - PARALLEL_DIST_TARGET)));
+        //logger.log("Parallel Angle V", std::to_string(PARALLEL_ANGLE_P * parallel_angle));
 
-        rotateSpeed = PARALLEL_ROTATE_P * (PARALLEL_DIST_P * (parallel_dist - PARALLEL_DIST_TARGET) + PARALLEL_ANGLE_P * parallel_angle);
+        rotateSpeed = std::min(PARALLEL_ROTATE_P * (PARALLEL_DIST_P * (parallel_dist - PARALLEL_DIST_TARGET) + PARALLEL_ANGLE_P * parallel_angle), 2.0f);
+        forwardScale = std::max(1-FORWARD_SCALE_FACTOR*std::abs(rotateSpeed),-0.1f) * FORWARD_SPEED;
 
-        setMotor("left", FORWARD_SPEED - rotateSpeed);
-        setMotor("right", FORWARD_SPEED + rotateSpeed);
+        logger.log("Rotate Speed", std::to_string(rotateSpeed));
+        logger.log("Forward Scale", std::to_string(forwardScale));
+        if (rotateSpeed > 0) {
+          setMotor("left", forwardScale);
+          setMotor("right", forwardScale + rotateSpeed);
+        }
+        else {
+          setMotor("left", forwardScale - rotateSpeed);
+          setMotor("right", forwardScale);
+        }
 
-        if (fdist < 8) { // If small corner
+        if (fdist < 7) { // If small corner
           stop();
           return 1;
         }
         else if (!inRange(lfdist) && !inRange(lbdist)) { // If IRLF misses
-          stop();
-          return 3;
+          //stop();
+          return 2;
         }
         else { // Stay if anything else
           return 2;
