@@ -22,22 +22,22 @@ mraa::Aio sesorpin
 	}
 
 	/*
-	   read 10 IR sensor value shown in 1ms
+	   read 20 IR sensor value shown in 2ms
 input:
 mraa::Aio sensorpin
 	 */
 	float averageRead()
 	{	
 		int count = 0;
-		int* sample = new int[10];
-		while (count < 10)
+		int* sample = new int[20];
+		while (count < 20)
 		{
 			sample[count] = _IR->read();
 			count++;
 			usleep(100);
 		}
-		std::sort(sample,sample+10);
-		return ((sample[4]+sample[5])/2)*5.0/1024;
+		std::sort(sample,sample+20);
+		return ((sample[9]+sample[10])/2)*5.0/1024;
 	}
 	/*
 	   get the Distance from the wall (in)
@@ -58,7 +58,7 @@ mraa::Aio sensorpin
 		if (voltage <= 0.280)
 		{
 			//std::cout<<"more that 10 in away :D"<< std::endl;
-			return 100.0;
+			return 20.0;
 		}
 		int count = 0;
 		for(; svoltage[count]>=voltage; count++)

@@ -134,7 +134,7 @@ public:
 		}
 		else {
 			if(side==LEFT) writeVolt(0.1613*set+0.1124);
-			else writeVolt(0.701*set+0.1828);
+			else writeVolt(0.401*set+0.2828);
 		}
 	}
 	float getSpeed() { return targetRPS; }
