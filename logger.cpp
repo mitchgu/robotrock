@@ -51,9 +51,5 @@ public:
 
 } ;
 
-int main () {
-	Logger test_log;
-	test_log.log("IR1", "hello");
-	test_log.log("IR2", "hello again");
-	return 0;
+main () {
 }
