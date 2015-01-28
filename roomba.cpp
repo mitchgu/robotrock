@@ -31,6 +31,11 @@ bool inRange(float dist) {
   return false;
 }
 
+void stop() {
+  left->stop();
+  right->stop();
+}
+
 public:
   Roomba(Motor* _l, Motor* _r, IR* _irf, IR* _irr, IR* _irlf, IR* _irlb, mraa::Gpio* _uirb, Location* _start, Logger _logger) {
     left = _l;
@@ -62,45 +67,43 @@ public:
     switch (state) {
       // State 0: Go forward ///////////////////////////////////////////////////
       case 0: 
-        /* BEHAVIOR TO ENABLE LATER
-        if (irf->getDistance() < 10) {
-          left->stop();
-          right->stop();
+        left->forward();
+        right->forward();
+        left->setSpeed(0.25);
+        right->setSpeed(0.25);
+
+        if (fdist < 7 || rdist < 5) { // If close in front or on right
+          stop();
           return 1;
         }
-        else {
-          left->forward();
-          right->forward();
-          left->setSpeed(0.25);
-          right->setSpeed(0.25);
-          return 0;
-        }
-        */
-        if (fdist < 7 || rdist < 5) { // If close in front or on right
-            return 1;
-          }
         else if (lfdist < 7) { // If left is already close to wall
+          stop();
           return 2;
         }
         else { // Stay if anything else 
-            return 0;
+          return 0;
         }
         return 0;
-      case 1: // State 1: Rotate in place CW
+      // State 1: Rotate in place CW //////////////////////////////////////////
+      case 1: 
         /* BEHAVIOR
         */
         if (lfdist < 10 && !inRange(fdist)){
+          stop();
           return 2;
         }
         else{
           return 1;
         }
-      case 2: // State 2: Drive parallel to wall
+      // State 2: Drive parallel to wall //////////////////////////////////////
+      case 2: 
         //behavior
         if (fdist < 7) { // If small corner
+          stop();
           return 1;
         }
         else if (!inRange(lfdist)) { // If IRLF misses
+          stop();
           return 3;
         }
         else { // Stay if anything else
@@ -109,12 +112,13 @@ public:
       // State 3: Pivot CCW about corner ///////////////////////////////////////
       case 3:
         //behavior
-      if (!inRange(lfdist)){
-        return 3;
-      }
-      else{
-        return 0;
-      }
+        if (!inRange(lfdist)){
+          return 3;
+        }
+        else{
+          stop();
+          return 2;
+        }
     }
   }
 
