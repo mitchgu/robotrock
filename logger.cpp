@@ -33,7 +33,7 @@ public:
 	Logger ()
 	{
 		time_start = getmsofday();
-		text_file = currentDateTime() + ".txt";
+		text_file = "loggers/" + currentDateTime() + ".txt";
 		ofstream logging;
 		logging.open(text_file.c_str());
 		logging.close();
@@ -52,4 +52,7 @@ public:
 } ;
 
 main () {
+	Logger log_test;
+	log_test.log("IR1", "10");
+	log_test.log("IR2", "20");
 }
