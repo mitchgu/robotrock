@@ -87,12 +87,18 @@ public:
         }
         return 0;
       case 1: // State 1: Rotate in place CW
-        /* BEHAVIOR
-        */
-        if (lfdist < 10 && !inRange(fdist)){
+        left->forward();
+        right->backward();
+        left->setSpeed(0.25);
+        right->setSpeed(0.25);
+        
+        if (lfdist < 10 && !inRange(fdist)){ //If close to wall on left, clear in front
           return 2;
         }
-        else{
+        else if (!inRange(lfdist) && !inRange(fdist) && !inRange(rdist)){
+          return 0;
+        }
+        else{ //Not clear or parallel to wall, keep rotating
           return 1;
         }
       case 2: // State 2: Drive parallel to wall
@@ -109,11 +115,11 @@ public:
       // State 3: Pivot CCW about corner ///////////////////////////////////////
       case 3:
         //behavior
-      if (!inRange(lfdist)){
+      if (!inRange(lfdist)){ //If passes big corner, IRLF loses wall
         return 3;
       }
-      else{
-        return 0;
+      else{ //If IRLF in range, has finished turning corner
+        return 2;
       }
     }
   }
