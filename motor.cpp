@@ -128,8 +128,14 @@ public:
 		targetRPS=set;
 		//if(side==LEFT) writeVolt(0.1489*set+0.0367);
 		//else writeVolt(0.1568*set+0.0375);
-		if(side==LEFT) writeVolt(0.1613*set+0.1124);
-		else writeVolt(0.2701*set+0.1828);
+		if (forw == true) {
+			if(side==LEFT) writeVolt(0.1613*set+0.1124);
+			else writeVolt(0.2701*set+0.1828);
+		}
+		else {
+			if(side==LEFT) writeVolt(0.1613*set+0.1124);
+			else writeVolt(0.701*set+0.1828);
+		}
 	}
 	float getSpeed() { return targetRPS; }
 	/*

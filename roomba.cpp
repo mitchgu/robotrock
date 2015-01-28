@@ -3,10 +3,10 @@
 #include "shortIR.cpp"
 #include "logger.cpp"
 
-const float FORWARD_SPEED = 0.16;
+const float FORWARD_SPEED = .4;
 const float PARALLEL_DIST_TARGET = 6.0;
 const float PARALLEL_DIST_P = .2;
-const float PARALLEL_ANGLE_P = .2;
+const float PARALLEL_ANGLE_P = .1;
 const float ROTATE_P = 0.25;
 
 class Roomba {
@@ -119,7 +119,7 @@ public:
         left->setSpeed(0.25);
         right->setSpeed(0.25);
         
-        if (lfdist < 8 && !inRange(fdist)){ //If close to wall on left, clear in front
+        if (lfdist < 8 && fdist > 15){ //If close to wall on left, clear in front
           stop();
           return 2;
         }
@@ -135,6 +135,9 @@ public:
 
         parallel_dist = 0.5 * lfdist + 0.5 * lbdist;
         parallel_angle = lfdist - lbdist;
+
+        logger.log("Parallel Dist", std::to_string(parallel_dist - PARALLEL_DIST_TARGET));
+        logger.log("Parallel Angle", std::to_string(parallel_angle));
 
         rotateSpeed = ROTATE_P * (PARALLEL_DIST_P * (parallel_dist - PARALLEL_DIST_TARGET) + PARALLEL_ANGLE_P * parallel_angle);
 
@@ -154,7 +157,10 @@ public:
         }
       // State 3: Pivot CCW about corner ///////////////////////////////////////
       case 3:
-        //behavior
+
+        setMotor("left", 0.2);
+        setMotor("right", 1.2);
+
         if (!inRange(lfdist)){ //If passes big corner, IRLF loses wall
           return 3;
         }
