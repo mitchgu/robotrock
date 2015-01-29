@@ -1,33 +1,44 @@
 #include <iostream>
 #include <vector>
-#include <random> 
-#include <chrono>
+#include <time.h>
 #include "data.cpp"
 #include "mapdealer.cpp"
+#include <cassert>
 
 #define TR(i,it) for(typeof(i.begin()) it=i.begin(); it!=i.end(); it++) 
 #define pb push_back
 
-const float range_wall = 9;
+const float range_wall = 5;
+const float dis_threshold = 9;
 class cNode {
-	cPoint* pt;
 	cNode* _parent;
 public:
+	cPoint* pt;
+	cNode(){}
 	cNode(cPoint _pt, cNode* parent) 
 	{
-		pt = &_pt;
+		pt = new cPoint(_pt.x(),_pt.y());
 		_parent = parent;
 	}
+	/*
+	cNode(const cNode& other)
+	{
+		pt=other.pt;
+		_parent=other.parent();
+	}*/
 	float distance(cPoint other)
 	{
 		return pt->distance(&other);
 	}
 	cNode* parent()
 	{
+	//	if(_parent!=NULL) std::cout<<_parent->point().x()<<" PARENT "<<_parent->point().y()<<std::endl;
 		return _parent;
 	}
 	cPoint point()
 	{
+		if(pt==NULL) std::cout<<"I AM NULL"<<std::endl;
+		assert(pt!=NULL);
 		return *pt;
 	}
 };
@@ -36,18 +47,22 @@ class Rect {
 	cPoint* p2;
 	cPoint* p3;
 	cPoint* p4;
+	float x0; float y0; float x1; float y1;
 public:
 	Rect( Wall wall, float range) 
 	{
-		float x0 = 24.0*wall.xs();
-		float y0 = 24.0*wall.ys();
-		float x1 = 24.0*wall.xe();
-		float y1 = 24.0*wall.ye();
-		float length = wall.length()*24.0;
+		x0 = wall.xs();
+		y0 = wall.ys();
+		x1 = wall.xe();
+		y1 = wall.ye();
+		float length = wall.length();
 		p1 =new cPoint(x0 - (x1-x0)*range/length + (y1-y0)*range/length, y0 - (y1-y0)*range/length + (x0-x1)*range/length);
 		p2 =new cPoint(x0 - (x1-x0)*range/length - (y1-y0)*range/length, y0 - (y1-y0)*range/length - (x0-x1)*range/length);
 		p3 =new cPoint(x1 + (x1-x0)*range/length + (y1-y0)*range/length, y1 + (y1-y0)*range/length + (x0-x1)*range/length);
 		p4 =new cPoint(x1 + (x1-x0)*range/length - (y1-y0)*range/length, y1 + (y1-y0)*range/length - (x0-x1)*range/length);
+		//std::cout<<"this wall:"<<x0<<","<<y0<<" & "<<x1<<","<<y1<<std::endl;
+		//std::cout<<"up left:"<<p1->x()<<","<<p1->y()<<" ,down left:"<<p2->x()<<","<<p2->y()<<std::endl; 
+		//std::cout<<"up right:"<<p3->x()<<","<<p3->y()<<" ,down right:"<<p4->x()<<","<<p4->y()<<std::endl;
 	}
 	bool line_intersect(cPoint pa, cPoint pb, cPoint pc, cPoint pd) //x1,x2 a line; x3,x4 a line
 	{
@@ -55,10 +70,14 @@ public:
 		float x3 = pc.x(); float y3 = pc.y(); float x4 = pd.x(); float y4 = pd.y();
 		float m1 = ((y2-y1) * (x3-x1) - (x2-x1) * (y3-y1)) / ((y4-y3) * (x2-x1) - (x4-x3) * (y2-y1));
 		float m2 = ((x3-x1) * (y4-y3) - (x4-x3) * (y3-y1)) / ((y4-y3) * (x2-x1) - (y2-y1) * (x4-x3));
+		//std::cout<<"m1:"<<m1<<" ,m2:"<<m2<<std::endl;
 		return ((m1<1) && (m1>0) && (m2<1) && (m2>0)); 
 	}
 	bool intersect(cPoint ps, cPoint pe) 
 	{
+	//	std::cout<<std::endl;
+		//std::cout<<"these point:"<<ps.x()<<","<<ps.y()<<" & "<<pe.x()<<","<<pe.y()<<std::endl;
+		//std::cout<<"the wall:"<<x0<<","<<y0<<" & "<<x1<<","<<y1<<std::endl;
 		return (line_intersect(ps,pe,*p1,*p3) || line_intersect(ps,pe,*p2,*p1) || line_intersect(ps,pe,*p3,*p4) || line_intersect(ps,pe,*p2,*p4));
 	}
 };
@@ -66,110 +85,131 @@ class Plan {
 	cPoint* start;
 	cPoint* target;
 	std::vector<Rect> expwall;
-	cNode* last;
-	unsigned seed;
-	std::default_random_engine *generator;
-  	std::uniform_real_distribution<double> xgen;
-  	std::uniform_real_distribution<double> ygen;
+	cNode last;
+	std::vector<cNode*> tree;
 	float xmin; float xmax; float ymin; float ymax;
-
-	void planner() 
+	float random(float min, float max) 
 	{
-		std::vector<cNode> tree;
-		cNode st(*start,NULL);
-		tree.pb(st);
-		bool end_plan = false;
-		TR(expwall,rct) {end_plan = !(rct->intersect(*start,*target));}
-		if(end_plan) 
-		{
-			last = &st;
-			return ;
-		}
-		while(!end_plan)
-		{
-			float new_x = xgen(generator);
-			float new_y = ygen(generator);
-			cPoint new_point(new_x,new_y);
-			std::cout<<"getting new point: "<<std::endl;
-			std::cout<<new_x<<" , "<<new_y<<std::endl;
-			float nearestdis = 10000;
-			cNode* nearest;
-			bool connectable = false;
-			TR(tree,nd) 
-			{
-				bool reachable = false;
-				TR(expwall,rct) reachable = !(rct->intersect((*nd).point(),new_point));
-				connectable = connectable || reachable;
-				if(((*nd).distance(new_point)<nearestdis)&&reachable)
-				{
-					std::cout<<"I am reachable"<<std::endl;
-					nearestdis = (*nd).distance(new_point);
-					nearest = &(*nd);
-				}
-			}
-			if (connectable) 
-			{
-				TR(expwall,rct) end_plan = !(rct->intersect(new_point,*target));
-				cNode new_node(new_point,nearest); 
-				std::cout<<"my nearest point is: "<<nearest->point().x()<<" , "<<nearest->point().y()<<std::endl;
-				tree.pb(new_node);
-				if(end_plan) 
-				{
-					last = &new_node;
-					return ;
-				}
-			}
-		}
+		std::srand (clock());
+		rand();
+		rand();
+   		float rand_num = ( rand()) / (float) RAND_MAX;
+   		rand_num = rand_num*(max-min)+min;
+		return rand_num;
 	}
+
 public:
 	Plan(std::vector<Wall> allwall) 
 	{
-		xmin = allwall[0].xe()*24;
-		xmax = allwall[0].xe()*24;
-		ymin = allwall[0].ye()*24;
-		ymax = allwall[0].ye()*24;
+		xmin = allwall[0].xe();
+		xmax = allwall[0].xe();
+		ymin = allwall[0].ye();
+		ymax = allwall[0].ye();
 		tr(allwall) 
 		{
 			Rect rect(*it, range_wall);
 			expwall.pb(rect);
-			if((*it).xe()*24<xmin) xmin = (*it).xe()*24;
-			if((*it).xs()*24<xmin) xmin = (*it).xs()*24;
-			if((*it).ye()*24<ymin) ymin = (*it).ye()*24;
-			if((*it).ys()*24<ymin) ymin = (*it).ys()*24;
-			if((*it).xe()*24>xmax) xmax = (*it).xe()*24;
-			if((*it).xs()*24>xmax) xmax = (*it).xs()*24;
-			if((*it).ye()*24>ymax) ymax = (*it).ye()*24;
-			if((*it).ys()*24>ymax) ymax = (*it).ys()*24;
+			if((*it).xe()<xmin) xmin = (*it).xe();
+			if((*it).xs()<xmin) xmin = (*it).xs();
+			if((*it).ye()<ymin) ymin = (*it).ye();
+			if((*it).ys()<ymin) ymin = (*it).ys();
+			if((*it).xe()>xmax) xmax = (*it).xe();
+			if((*it).xs()>xmax) xmax = (*it).xs();
+			if((*it).ye()>ymax) ymax = (*it).ye();
+			if((*it).ys()>ymax) ymax = (*it).ys();
 		}
-		unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
-		generator = std::default_random_engine(seed);
-		xgen = std::uniform_real_distribution<double>(xmin,xmax);
-		ygen = std::uniform_real_distribution<double>(ymin,ymax);
 	}
 	// set the starting point
 	void setStart(cPoint _start) 
 	{
-		start = &_start;
+		start = new cPoint(_start.x(),_start.y());
 	}
 	// set the target point void setTarget(cPoint _target) 
 	void setTarget(cPoint _target)
 	{
-		target = &_target;
+		target = new cPoint(_target.x(),_target.y());
 	}
-	//return a whole group a point that connect start to end 
 	std::vector<cPoint> plan() 
 	{
-		planner();
-		std::vector<cPoint> myplan;
-		myplan.pb(*target);
-		cNode current = *last;
-		while(current.parent() != NULL) 
+		cNode* st= new cNode(*start,NULL);
+		tree.pb(st);
+		bool end_plan = true;
+		//std::cout<<"start:"<<start->x()<<","<<start->y()<<" & "<<"target:"<<target->x()<<","<<target->y()<<std::endl;
+		TR(expwall,rct) {end_plan = (!(rct->intersect(*start,*target)))&&end_plan;}
+		if(end_plan) 
 		{
-			myplan.pb(current.point());
-			current = *current.parent();
+			//std::cout<<"I find my way out directly"<<std::endl;
+			last = *st;
 		}
-		myplan.pb(*start);
-		std::reverse(myplan.begin(),myplan.end());
-		return myplan;
+		else {
+			while(!end_plan)
+			{
+				float new_x = random(xmin,xmax);
+				float new_y = random(ymin,ymax);
+				bool point_not_too_close = true;
+				cPoint new_point(new_x,new_y);
+				//std::cout<<std::endl;
+				std::cout<<"getting new point: "<<std::endl;
+				std::cout<<new_x<<" , "<<new_y<<std::endl;
+				TR(tree,node) {
+					point_not_too_close = point_not_too_close&&(!((*node)->distance(new_point)<dis_threshold));
+				}
+				if(!point_not_too_close) {
+					//std::cout<<"this point is too close to other point"<<std::endl;
+					continue;
+				}
+				float nearestdis = 10000;
+				cNode* nearest = NULL;
+
+				bool connectable = false;
+				TR(tree,nd) 
+				{
+					bool reachable = true;
+					TR(expwall,rct) {reachable = (!(rct->intersect((*nd)->point(),new_point)))&&reachable;}
+					connectable = connectable || reachable;
+					if(((*nd)->distance(new_point)<nearestdis)&&reachable)
+					{
+						std::cout<<"I am reachable"<<std::endl;
+						nearestdis = (*nd)->distance(new_point);
+						//std::cout<<"NEARESDT "<<nd->point().x()<<" "<<nd->point().y()<<std::endl;
+						nearest = (*nd);
+						std::cout<<nearest<<std::endl;
+					}
+				}
+				if (connectable) 
+				{
+					assert(nearest!=NULL);
+					bool end_plan2 = true;
+					TR(expwall,rct) {
+						end_plan2 = (!(rct->intersect(new_point,*target)))&&end_plan2;
+						//std::cout<<(*target).x()<<(*target).y()<<std::endl;
+					}
+					cNode* new_node= new cNode(new_point,nearest); 
+					std::cout<<"my nearest point is: "<<nearest->point().x()<<" , "<<nearest->point().y()<<std::endl;
+					tree.pb(new_node);
+					if(end_plan2) 
+					{
+						last = *new_node;
+						std::cout<<"last setting "<<last.point().x()<<" "<<last.point().y()<<std::endl;
+						break;
+					}
+				}
+			}
+		}
+		std::cout<<"last setting "<<last.parent()->point().x()<<" "<<last.parent()->point().y()<<std::endl;
+		std::vector<cPoint> return_points;
+		return_points.pb(*target);
+		while(last.parent()!=NULL) {
+			std::cout<<last.point().x()<<" , "<<last.point().y()<<std::endl;
+			return_points.pb(last.point());
+			last = *(last.parent());
+			//std::cout<<last->point().x()<<" , "<<last->point().y()<<std::endl;
+		}
+		return_points.pb(*start);
+		std::reverse(return_points.begin(),return_points.end());
+		return return_points;
 	}
+	std::vector<cPoint> resize() {
+	}
+
 };
