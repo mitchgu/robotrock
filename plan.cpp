@@ -8,7 +8,7 @@
 #define TR(i,it) for(typeof(i.begin()) it=i.begin(); it!=i.end(); it++) 
 #define pb push_back
 
-const float range_wall = 5;
+const float range_wall = 8;
 const float dis_threshold = 9;
 class cNode {
 	cNode* _parent;
@@ -84,10 +84,20 @@ public:
 class Plan {
 	cPoint* start;
 	cPoint* target;
+	Motor* left;
+	Motor* right;
+	Location* current;
+	float start_angle;
+	int count;
+	Motion* motion;
+	Odometry* odo;
 	std::vector<Rect> expwall;
 	cNode last;
 	std::vector<cNode*> tree;
 	float xmin; float xmax; float ymin; float ymax;
+	initialized;
+	std::vector<cPoint> this_plan;
+
 	float random(float min, float max) 
 	{
 		std::srand (clock());
@@ -97,14 +107,42 @@ class Plan {
    		rand_num = rand_num*(max-min)+min;
 		return rand_num;
 	}
+	std::vector<cPoint> resize(std::vector<cPoint> v) {
+		std::vector<cPoint> resize_point = v;
+		if (v.size()<3) return v;
+		int size;
+		bool end_resize = false;
+		while(!end_resize)
+		{
+			end_resize = true;
+			std::vector<cPoint> after_resize;
+			after_resize.pb(resize_point[0]);
+			size = resize_point.size();
+			for(int i =0;i<(size-2);i++) {
+				bool connectable = true;
+				TR(expwall,rct) {connectable = (!(rct->intersect(resize_point[i],resize_point[i+2])))&&connectable;}
+				if (!connectable) after_resize.pb(resize_point[i+1]);
+				end_resize = end_resize && (!connectable);
+			}
+			after_resize.pb(resize_point[size-1]);
+			resize_point = after_resize;
+		}
+		return resize_point;
+	}
 
 public:
-	Plan(std::vector<Wall> allwall) 
+	Plan(std::vector<Wall> allwall, Motor* _left, Motor* _right, Location* location) 
 	{
 		xmin = allwall[0].xe();
 		xmax = allwall[0].xe();
 		ymin = allwall[0].ye();
 		ymax = allwall[0].ye();
+		left = _left;
+		right = _right;
+		current = location;
+		odo = new Odometry(left,right,location);
+		motion = new Motion(left,right,odo,location);
+		initialized = false;
 		tr(allwall) 
 		{
 			Rect rect(*it, range_wall);
@@ -119,10 +157,17 @@ public:
 			if((*it).ys()>ymax) ymax = (*it).ys();
 		}
 	}
-	// set the starting point
-	void setStart(cPoint _start) 
+	void setStart() 
 	{
-		start = new cPoint(_start.x(),_start.y());
+		start_angle = current->theta();
+		start = new cPoint(current->x(),current->y());
+	}
+	// set the starting point
+	void setStart(Location* _start) 
+	{
+		start_angle = _start->theta();
+		start = new cPoint(_start->x(),_start->y());
+		odo->set(_start);
 	}
 	// set the target point void setTarget(cPoint _target) 
 	void setTarget(cPoint _target)
@@ -207,9 +252,61 @@ public:
 		}
 		return_points.pb(*start);
 		std::reverse(return_points.begin(),return_points.end());
-		return return_points;
-	}
-	std::vector<cPoint> resize() {
+		return resize(return_points);
 	}
 
+	int run(int state) {
+		if (state == 0) {  //start
+			if(!initialized) {
+				this_plan = plan();
+				count = 0;
+				float angle = this_plan[count].angle(this_plan[count+1])-start_angle;
+				motion->rotate(angle);
+				initialized = true;
+				return 0;
+			}
+			else {
+				if (!motion->run()) return 0;
+				else{
+					initialized = false;
+					return 2;
+				}
+			}
+		}
+		if (state == 1) {
+			if(!initialized) {
+				float angle = this_plan[count].angle(this_plan[count+1])-odo->getAngle();
+				motion->rotate(angle);
+				initialized = true;
+				return 1;
+			}
+			else {
+				if (!motion->run()) return 1;
+				else{
+					initialized = false;
+					return 2;
+				}
+			}
+		}
+		if (state == 2) {
+			if(!initialized) {
+				float distance = this_plan[count].distance(this_plan[count+1]);
+				motion->straight(distance);
+				initialized = true;
+				return 2;
+			}
+			else {
+				if(!motion->run()) return 2;
+				else{
+					initialized = false;
+					count++;
+					if (count>=(this_plan.size()-1) return 3;
+					else return 1;
+				}
+
+			}
+		}
+		
+	}
+	
 };

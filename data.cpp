@@ -36,6 +36,9 @@ public:
 	float distance(cPoint* other){
 		return sqrt(pow((other->x()-x()),2.0)+pow((other->y()-y()),2.0));
 	}
+	float distance(cPoint other){
+		return sqrt(pow((other.x()-x()),2.0)+pow((other.y()-y()),2.0));
+	}
 	bool clockwise(cPoint* p1, cPoint* p2) {
 		cPoint A=*p1-(*this);
 		cPoint B=*p2-*p1;
@@ -64,6 +67,14 @@ public:
 	float abs()
 	{
 		return sqrt(_x*_x+_y*_y);
+	}
+	float angle(cPoint other)
+	{
+		float now_angle = atan2(fabs(other.x()-x())/fabs(other.y()-y()));
+		if((other.x()>x())&&(other.y()>y())) return now_angle;
+		if((other.x()>x())&&(other.y()<y())) return 3.1416-now_angle;
+		if((other.x()<x())&&(other.y()<y())) return 3.1416+now_angle;
+		if((other.x()<x())&&(other.y()>y())) return 6.283-now_angle;
 	}
 };
 
