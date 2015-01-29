@@ -1,4 +1,5 @@
 #include <cassert>
+#include "data.cpp"
 #include <math.h>
 #include <utility>
 #include <vector>
@@ -26,18 +27,20 @@ int main()
 	downSize(testFrame, testOut);
 	Size outSize = Size(testOut.cols, testOut.rows);
 
-	testEdge=hough(testOut);
-	Size edgeSize=Size(testEdge.cols,testEdge.rows);
+	//testEdge=hough(testOut);
+	//Size edgeSize=Size(testEdge.cols,testEdge.rows);
 
 	VideoWriter outVid("test.avi", CV_FOURCC('M','P','4','2'),10,outSize,true);
 	VideoWriter recVid("rec.avi", CV_FOURCC('M','P','4','2'),10,outSize,true);
-	VideoWriter edgeVid("edge.avi", CV_FOURCC('M','P','4','2'),10,edgeSize,false);
+	//VideoWriter edgeVid("edge.avi", CV_FOURCC('M','P','4','2'),10,edgeSize,false);
 	assert(outVid.isOpened());
 	std::vector<int> inds;
-	inds.pb(0);
-	inds.pb(1);
-	inds.pb(2);
-	inds.pb(4);
+	int N,m; std::cin>>N;
+	REP(i,N)
+	{
+		std::cin>>m;
+		inds.pb(m);
+	}
 	//inds.pb(3);
 	for (int i = 0; i < 20; ++i) 
 	{
@@ -49,17 +52,15 @@ int main()
 		downSize(in,frame); //downsized
 		recVid << frame; //recorded raw video
 
-		Mat emap,edge;
-		emap=hough(frame);
-
 		maxFilter(frame,inds);
-		fill(frame);
+		fill(frame,0,2);
+
+		vector<Vec4i> lines=hough(frame);
+		procHough(lines,frame);
 
 		//frame.copyTo(edge,emap);
 
-		edgeVid<<emap;
 
-		Mat out;
 		outVid<<frame; //recorded processed video
 
 

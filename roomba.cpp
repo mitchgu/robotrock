@@ -11,13 +11,13 @@
 #define CHASE 3
 #define PICKUP 4
 
-const float FORWARD_SPEED = .75;
+const float FORWARD_SPEED = .65;
 const float ROTATE_SPEED = .75;
 const float PARALLEL_DIST_TARGET = 5.0;
-const float PARALLEL_DIST_P = .15;
+const float PARALLEL_DIST_P = .1;
 const float PARALLEL_ANGLE_P = .2;
 const float PARALLEL_ROTATE_P = 1.0;
-const float FORWARD_SCALE_FACTOR = 0.75;
+const float FORWARD_SCALE_FACTOR = 1.5;
 const int PIC_DURATION=200;
 const double stopChaseBall=3;
 
@@ -27,6 +27,7 @@ class Roomba {
 	IR* irr;
 	IR* irf;
 	Servo* claw;
+	Servo* flip;
 	mraa::Gpio* uirb;
 	mraa::Gpio* rotEnd;
 	mraa::Gpio* midEnd;
@@ -39,7 +40,7 @@ class Roomba {
 	double cubeDist, cubeAngle;
 	int lostCount,cubeType, checkCount;
 	VideoWriter* outVid,*recVid;
-	struct timeval tv;
+	struct timeval tv,ts;
 
 	Motor* left;
 	Motor* right;
@@ -60,6 +61,8 @@ class Roomba {
 	float rotateSpeed;
 	float forwardScale;
 
+	bool homeDetected;
+
 	// Returns whether a sensor distance is in range.
 	bool inRange(float dist) {
 		if (dist<20) {
@@ -69,7 +72,7 @@ class Roomba {
 	}
 
 	double timeDiff() { 
-		unsigned long long ms = (unsigned long long)(tv.tv_sec)*1000 + (unsigned long long)(tv.tv_usec) / 1000; 
+		unsigned long long ms = (unsigned long long)(ts.tv_sec)*1000 + (unsigned long long)(ts.tv_usec) / 1000; 
 		gettimeofday(&tv, NULL); 
 		unsigned long long msl = (unsigned long long)(tv.tv_sec)*1000 + (unsigned long long)(tv.tv_usec) / 1000; 
 		double msf = (double)(msl-ms); 
@@ -138,13 +141,34 @@ class Roomba {
 
 		base = new Motor(10,11,6,false); //base motor -counterclockwise when forward
 		lift = new Motor(8,9,3,true); //lift motor
-		claw=new Servo(15);
+		claw = new Servo(15);
+		flip = new Servo(3);
 
 		lostCount=0,cubeType=-1,checkCount=PIC_DURATION;
 
 		for(int i=0;i<10;i++) cap->read(test);
-	}
+		motion->setMConstants(0.5,0,0);
 
+		gettimeofday(&ts, NULL); 
+	}
+	void armExtend()
+	{
+		flip->write(0.3);
+		usleep(500000);
+		
+	}
+	void armSwing()
+	{
+		flip->write(1.0);
+		usleep(500000);
+		flip->release();
+	}
+	void armRetract()
+	{
+		flip->write(-1.0);
+		usleep(500000);
+		flip->release();
+	}
 	void pickUp()
 	{
 		int slp=100000;
@@ -188,6 +212,27 @@ class Roomba {
 		while(upEnd->read() ) usleep(1000);
 		lift->stop();
 	}
+
+	void dropTower(bool tower)
+	{
+
+		if(tower) //left tower
+		{
+			Servo ltower(13);
+			ldoor.write(-0.2); //open
+			usleep(1000*1000);
+			ldoor.write(-0.9); //close
+			usleep(1000*1000);
+		}
+
+		else //right tower
+		{
+			Servo rtower(12);
+
+		}
+
+
+	}
 	bool senseBall(int samps=1)
 	{
 		//gettimeofday(&tv, NULL); 
@@ -198,11 +243,12 @@ class Roomba {
 		maxFilter(frame,inds);
 		std::vector<centers> ret=fill(frame);
 		//outVid->write(frame);
-		cubeType=0,cubeDist=1000000;
+		cubeType=-1,cubeDist=1000000;
 		bool sensed=false;
 		for(int j=0;j<ret.size();j++)
 		{
-			if(ret[j].type!=0&&ret[j].dist<cubeDist)
+			if(ret[j].type==4) homeDetected=true;
+			else if(ret[j].type!=0&&ret[j].dist<cubeDist)
 			{
 				cubeDist=ret[j].dist;
 				cubeAngle=ret[j].angle;
@@ -270,15 +316,15 @@ class Roomba {
 				if(in)
 					return PICKUP;
 				else if (lfdist < 9 && fdist > 14){ //If close to wall on left, clear in front
-					motion->rotate(0.3);
+					motion->rotate(0.6);
 					while(!motion->run()) usleep(1000);
 					stop();
-					if(senseBall(10))
+					if(senseBall(6))
 					{
 						motion->straight(true);
 						return CHASE;
 					}
-					motion->rotate(-0.3);
+					motion->rotate(-0.45);
 					while(!motion->run()) usleep(1000);
 					stop();
 					return PARALLEL;
@@ -296,12 +342,18 @@ class Roomba {
 				parallel_dist = 0.5 * lfdist + 0.5 * lbdist;
 				parallel_angle = lfdist - lbdist;
 
+				if (lfdist < 2 || lbdist < 2) {
+					parallel_angle = -2;
+				}
+
 				//logger.log("Parallel Dist V", std::to_string(PARALLEL_DIST_P * (parallel_dist - PARALLEL_DIST_TARGET)));
 				//logger.log("Parallel Angle V", std::to_string(PARALLEL_ANGLE_P * parallel_angle));
 
-				rotateSpeed = std::min(PARALLEL_ROTATE_P * (PARALLEL_DIST_P * (parallel_dist - PARALLEL_DIST_TARGET) + PARALLEL_ANGLE_P * parallel_angle), 2.0f);
+				rotateSpeed = std::min(PARALLEL_ROTATE_P * (PARALLEL_DIST_P * (parallel_dist - PARALLEL_DIST_TARGET) + PARALLEL_ANGLE_P * parallel_angle), 2.5f);
 				forwardScale = std::max(1-FORWARD_SCALE_FACTOR*std::abs(rotateSpeed),-0.0f) * FORWARD_SPEED;
 
+				logger.log("Angle Error", std::to_string(PARALLEL_ANGLE_P * parallel_angle));
+				logger.log("Distance Error", std::to_string(PARALLEL_DIST_P * (parallel_dist - PARALLEL_DIST_TARGET)));
 				logger.log("Rotate Speed", std::to_string(rotateSpeed));
 				logger.log("Forward Scale", std::to_string(forwardScale));
 
@@ -317,7 +369,7 @@ class Roomba {
 				}
 
 
-				if (fdist < 7) { // If small corner
+				if (fdist < 7 || rdist < 3.5) { // If small corner
 					stop();
 					return ALIGN;
 				}
@@ -332,7 +384,10 @@ class Roomba {
 			case CHASE:
 				motion->run();
 				//channel = wf->run_follower(channel);
-				if(!senseBall(6))
+				homeDetected=false;
+				bool sensed=senseBall(6);
+				if(homeDetected&&
+				if(!sensed)
 				{
 					if(lostCount==3) 
 					{
@@ -356,9 +411,20 @@ class Roomba {
 					motion->straight(false);
 					return CHASE;
 				}
+				
 				if(cubeDist<=20) 
 				{
-					goForward(20); stop();
+					goForward(-7); stop();
+					if(irf->getDistance()<10)
+					{
+						armExtend();
+						goForward(irf->getDistance()-2); stop();
+						motion->rotate(1.0);
+						while(!motion->run()) usleep(10000);
+						goForward(-5);
+						armRetract();
+					}
+					goForward(25); stop();
 					return PICKUP;
 				} 
 				else if(in) return PICKUP;

@@ -70,7 +70,7 @@ void maxFilter(Mat& frame, std::vector<int> inds)
 		REP(j,frame.cols)
 		{
 			bool set=false;
-			Vec3b& cur =frame.at<Vec3b>(i,j);
+			Vec3b& cur=frame.at<Vec3b>(i,j);
 			for(int k=0;k<inds.size()&&!set;k++)
 			{
 				int ind=inds[k];
@@ -80,7 +80,7 @@ void maxFilter(Mat& frame, std::vector<int> inds)
 				if(ind==1) multA=multB=1.15;
 				if(ind==2) multA=multB=1.15;
 				if(ind==3) Y=true,ind=1,multA=0.8,1.12;
-				if(ind==4) Y=true,ind=2,multA=0.8,1.12;
+				if(ind==4) Y=true,ind=2,multA=0.6,1.05;
 				if(cur[ind]>75&&cur[ind]>multA*cur[(ind+1)%3]&&cur[ind]>multB*cur[(ind+2)%3])  
 				{
 					set=true;
@@ -139,11 +139,34 @@ bool check(int i, int j, Mat &inFrame)
 	if(comp[i][j]==-1) return true;	
 	return false;
 }
+bool check(int i, int j, Mat &inFrame, int ind1, int ind2)
+{
+	if(i<0||i>=dimR) return false;
+	if(j<0||j>=dimC) return false;
+	Vec3b &cur=inFrame.at<Vec3b>(i,j);
+	if(cur[ind1]==0) return false;
+	if(cur[ind2]==0) return false;
+	if(comp[i][j]==-1) return true;	
+	return false;
+}
 bool checkin(int i, int j)
 {
 	if(i<0||i>=dimR) return false;
 	if(j<0||j>=dimC) return false;
 	return true;
+}
+int dfs(int i, int j, Mat &inFrame, int ind1, int ind2)
+{
+	int ar=1;
+	toti+=i, totj+=j;
+	comp[i][j]=currentComp;
+	REP(k,4)
+	{
+		int ni=i+dx[k],nj=j+dy[k];
+		if(!check(ni,nj,inFrame, ind1, ind2)) continue;
+		ar+=dfs(ni,nj,inFrame,ind1,ind2);
+	}
+	return ar;
 }
 int dfs(int i, int j, Mat &inFrame )
 {
@@ -193,11 +216,11 @@ std::vector<centers> fill(Mat &inFrame)
 			add.dist=dist.first;
 			add.angle=dist.second;
 			Vec3b &cur=inFrame.at<Vec3b>(i,j);
-			if(cur[0]!=0) add.type=0;
-			else if(cur[1]!=0&&cur[2]!=0) add.type=3;
+			if(cur[1]!=0&&cur[2]!=0) add.type=3;
+			else if(cur[0]!=0&&cur[2]!=0) add.type=4;
+			else if(cur[0]!=0) add.type=0;
 			else if(cur[1]!=0) add.type=1;
 			else add.type=2;
-			/*
 			REP(x,5) REP(y,5) 
 			{
 				int ni=ci+x,nj=cj+y;
@@ -208,16 +231,14 @@ std::vector<centers> fill(Mat &inFrame)
 					inFrame.at<Vec3b>(ni,nj)[ind]=0,inFrame.at<Vec3b>(ni,nj)[(ind+2)%3]=255;
 				}
 			}
-			*/
 			out.push_back(add);
 		}
 		currentComp++;
 	}
 	return out;
 }
-pdd fill(Mat &inFrame,int ind)
+void fill(Mat &inFrame,int ind1, int ind2)
 {
-	if(ind==3) ind=1;
 	comp=new int*[inFrame.rows];
 	cents.resize(0);
 	currentComp=0;
@@ -228,34 +249,34 @@ pdd fill(Mat &inFrame,int ind)
 		comp[i]=new int[inFrame.cols];
 		REP(j,inFrame.cols) comp[i][j]=-1;
 	}
-	pdd ret=mp(1e9,0);
+	vector<int> fcomp;
 	REP(i,inFrame.rows) REP(j,inFrame.cols) 
 	{
-		if(!check(i,j,inFrame)) continue;
+		if(!check(i,j,inFrame,ind1,ind2)) continue;
 		toti=0,totj=0;
-		int ar=dfs(i,j,inFrame);
+		int ar=dfs(i,j,inFrame,ind1,ind2);
 		int ci=toti/((double)ar);
 		int cj=totj/((double)ar);
-		if(ar>=200) 
+		if(ar>=400) 
 		{
-			//std::cout<<"("<<ci<<", "<<cj<<"), area: "<<ar<<std::endl;
+			fcomp.pb(currentComp);
 			cents.pb(mp(ci,cj));
-			std::pair<double,double> dist=getDist(ci,cj);
-			//std::cout<<"This point is "<<dist.first<<" inches away at angle "<<dist.second<<" to the normal \n";
-			ret=dist;
-			REP(x,5) REP(y,5) 
-			{
-				int ni=ci+x,nj=cj+y;
-				if(checkin(ni,nj))
-				{
-					//std::cout<<ni<<"" <<nj<<std::endl;
-					inFrame.at<Vec3b>(ni,nj)[ind]=0,inFrame.at<Vec3b>(ni,nj)[(ind+2)%3]=255;
-				}
-			}
 		}
 		currentComp++;
 	}
-	return ret;
+	REP(i,inFrame.rows) REP(j,inFrame.cols) 
+	{
+		bool in=false;
+		REP(k,fcomp.size() )
+		{
+			if(comp[i][j]==fcomp[k]) in=true;
+		}
+		if(!in)
+		{
+			Vec3b& cur =inFrame.at<Vec3b>(i,j);
+			cur[0]=cur[1]=cur[2]=0;
+		}
+	}
 }
 Mat brigChange(Mat frame)
 {
@@ -278,25 +299,106 @@ void edgeDetect(Mat& inFrame, Mat& outFrame)
 			0, -1,  0);
 	filter2D(inFrame, outFrame, inFrame.depth(), kern);
 }
-Mat hough(Mat &inFrame)
+vector<Vec4i> hough(Mat &inFrame)
 {
-	const int edgeThresh=20;
+	const int edgeThresh=5;
 	Mat gray,edge,blu;
 	cvtColor(inFrame, gray, COLOR_BGR2GRAY);
 	blur(gray, blu, Size(3,3));
 	Canny(blu, edge, edgeThresh, edgeThresh*3, 3);
 	vector<Vec4i> lines;
-	HoughLinesP(edge, lines, 1, CV_PI/180, 50, 50, 10 );
-	std::cout<<std::endl<<std::endl<<"HOUGHING"<<std::endl;
-
+	HoughLinesP(edge, lines, 1, CV_PI/3600.0, 40, 40, 20 );
+	//std::cout<<std::endl<<std::endl<<"HOUGHING"<<std::endl;
 	for( size_t i = 0; i < lines.size(); i++ )
 	{
 		Vec4i l = lines[i];
-		line( edge, Point(l[0], l[1]), Point(l[2], l[3]), Scalar(0,255,255), 3, CV_AA);
-		std::cout<<l[0]<<","<<l[1]<<" "<<l[2]<<","<<l[3]<<std::endl;
+		//std::cout<<l[0]<<","<<l[1]<<" "<<l[2]<<","<<l[3]<<std::endl;
 	}
+	return lines;
 	//out.create(inFrame.size(),inFrame.type());
-	//out= Scalar::all(0);
+	//out= Scalar::all(0);G
 	//inFrame.copyTo(out,edge);
-	return edge;
+}
+double angle(Vec4i a, Vec4i b)
+{
+	cPoint A(a[2]-a[0],a[3]-a[1]),B(b[2]-b[0],b[3]-b[1]),C(0,0);
+	double out= B.three_points_angle(&C,&A);
+	double ang=fabs(out);
+	ang=min(ang,CV_PI-ang);
+	if(ang>0.25)
+	{
+		std::cout<<a[0]<<","<<a[1]<<" "<<a[2]<<","<<a[3]<<std::endl;
+		std::cout<<b[0]<<","<<b[1]<<" "<<b[2]<<","<<b[3]<<std::endl;
+		std::cout<<"Angle is"<<ang<<std::endl;
+	}
+	return out;
+}
+Vec2i inter(Vec4i a, Vec4i b)
+{
+	double c1=(a[1]*a[2]-a[3]*a[0])/(1.0*(a[2]-a[0]) );
+	double m1=(a[3]-a[1])/(1.0*(a[2]-a[0]) );
+	double c2=(b[1]*b[2]-b[3]*b[0])/(1.0*(b[2]-b[0]) );
+	double m2=(b[3]-b[1])/(1.0*(b[2]-b[0]) );
+	int X=(c2-c1)/(m1-m2);
+	int Y=(m1*c2-m2*c1)/(m1-m2);
+	std::cout<<"INTERSECT at "<<X<<" "<<Y<<std::endl;
+	return Vec2i(X,Y);
+}
+vector<Vec4i> bundle(vector<Vec4i> lines)
+{
+	vector<Vec4i> out;
+	double mx=0;
+	REP(i,lines.size() )
+	{
+		bool in;
+		REP(j,i)
+		{
+			double ang=angle(lines[j],lines[i]);
+			ang=fabs(ang);
+			ang=min(ang,CV_PI-ang);
+			if(ang>mx&&ang>0.25)
+			{
+				mx=ang;
+				out.resize(0);
+				out.pb(lines[i]);
+				out.pb(lines[j]);
+			}
+		}
+	}
+	return out;
+}
+struct interior
+{
+	bool init;
+	pdd point;
+	Vec4i a,b;
+};
+void add(Vec2i &pt, double r, Vec4i line)
+{
+	if(abs(line[3]-pt[1])<abs(line[1]-pt[1]) ) r=-r;
+	double m=(line[3]-line[1])/(1.0*(line[2]-line[0]) );
+	double c=1/sqrt(1+m*m);
+	double s=c*m;
+	pt[0]+=r*c; pt[1]+=r*s;
+}
+pdd procHough(vector<Vec4i> lines, Mat &inFrame)
+{
+	lines=bundle(lines);
+	std::cout<<"number of bundels is"<<lines.size()<<std::endl;
+	REP(j,lines.size() )
+	{
+		line( inFrame, Point(lines[j][0], lines[j][1]), Point(lines[j][2], lines[j][3]), Scalar(0,255,255), 3, CV_AA);
+	}
+	pdd ret(-1,-1);
+	if(lines.size()>=2) 
+	{
+		Vec2i pt= inter(lines[0],lines[1]);
+		rectangle( inFrame, Point( pt[0], pt[1] ), Point( pt[0]+5,pt[1]+5), Scalar( 0, 255, 0 ), -1, 8 );
+		add(pt,70,lines[0]); add(pt,70,lines[1]);
+		std::cout<<"interior point is "<<pt[0]<<" "<<pt[1]<<std::endl;
+		rectangle( inFrame, Point( pt[0], pt[1] ), Point( pt[0]+5,pt[1]+5), Scalar( 0, 0, 255 ), -1, 8 );
+		ret=getDist(pt[0],pt[1]);
+		std::cout<<"interior point is "<<ret.first<<" inches away to deg"<<ret.second<<std::endl;
+	}
+	return ret;
 }
