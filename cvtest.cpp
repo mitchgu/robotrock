@@ -26,19 +26,20 @@ int main()
 	downSize(testFrame, testOut);
 	Size outSize = Size(testOut.cols, testOut.rows);
 
-	testEdge=canny(testOut);
+	testEdge=hough(testOut);
 	Size edgeSize=Size(testEdge.cols,testEdge.rows);
 
 	VideoWriter outVid("test.avi", CV_FOURCC('M','P','4','2'),10,outSize,true);
 	VideoWriter recVid("rec.avi", CV_FOURCC('M','P','4','2'),10,outSize,true);
-	VideoWriter edgeVid("edge.avi", CV_FOURCC('M','P','4','2'),10,edgeSize,true);
+	VideoWriter edgeVid("edge.avi", CV_FOURCC('M','P','4','2'),10,edgeSize,false);
 	assert(outVid.isOpened());
 	std::vector<int> inds;
 	inds.pb(0);
 	inds.pb(1);
 	inds.pb(2);
+	inds.pb(4);
 	//inds.pb(3);
-	for (int i = 0; i < 50; ++i) 
+	for (int i = 0; i < 20; ++i) 
 	{
 		Mat in;
 		cap >> in;
@@ -49,14 +50,14 @@ int main()
 		recVid << frame; //recorded raw video
 
 		Mat emap,edge;
-		emap=canny(frame);
+		emap=hough(frame);
 
 		maxFilter(frame,inds);
 		fill(frame);
 
-		frame.copyTo(edge,emap);
+		//frame.copyTo(edge,emap);
 
-		edgeVid<<edge;
+		edgeVid<<emap;
 
 		Mat out;
 		outVid<<frame; //recorded processed video

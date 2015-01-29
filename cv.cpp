@@ -77,9 +77,10 @@ void maxFilter(Mat& frame, std::vector<int> inds)
 				double multA,multB;
 				bool Y=false;
 				if(ind==0) multA=1.22,multB=1.5;
-				if(ind==1) multA=multB=1.2;
-				if(ind==2) multA=multB=1.2;
+				if(ind==1) multA=multB=1.15;
+				if(ind==2) multA=multB=1.15;
 				if(ind==3) Y=true,ind=1,multA=0.8,1.12;
+				if(ind==4) Y=true,ind=2,multA=0.8,1.12;
 				if(cur[ind]>75&&cur[ind]>multA*cur[(ind+1)%3]&&cur[ind]>multB*cur[(ind+2)%3])  
 				{
 					set=true;
@@ -196,6 +197,7 @@ std::vector<centers> fill(Mat &inFrame)
 			else if(cur[1]!=0&&cur[2]!=0) add.type=3;
 			else if(cur[1]!=0) add.type=1;
 			else add.type=2;
+			/*
 			REP(x,5) REP(y,5) 
 			{
 				int ni=ci+x,nj=cj+y;
@@ -206,6 +208,7 @@ std::vector<centers> fill(Mat &inFrame)
 					inFrame.at<Vec3b>(ni,nj)[ind]=0,inFrame.at<Vec3b>(ni,nj)[(ind+2)%3]=255;
 				}
 			}
+			*/
 			out.push_back(add);
 		}
 		currentComp++;
@@ -275,13 +278,23 @@ void edgeDetect(Mat& inFrame, Mat& outFrame)
 			0, -1,  0);
 	filter2D(inFrame, outFrame, inFrame.depth(), kern);
 }
-Mat canny(Mat &inFrame)
+Mat hough(Mat &inFrame)
 {
 	const int edgeThresh=20;
 	Mat gray,edge,blu;
 	cvtColor(inFrame, gray, COLOR_BGR2GRAY);
 	blur(gray, blu, Size(3,3));
 	Canny(blu, edge, edgeThresh, edgeThresh*3, 3);
+	vector<Vec4i> lines;
+	HoughLinesP(edge, lines, 1, CV_PI/180, 50, 50, 10 );
+	std::cout<<std::endl<<std::endl<<"HOUGHING"<<std::endl;
+
+	for( size_t i = 0; i < lines.size(); i++ )
+	{
+		Vec4i l = lines[i];
+		line( edge, Point(l[0], l[1]), Point(l[2], l[3]), Scalar(0,255,255), 3, CV_AA);
+		std::cout<<l[0]<<","<<l[1]<<" "<<l[2]<<","<<l[3]<<std::endl;
+	}
 	//out.create(inFrame.size(),inFrame.type());
 	//out= Scalar::all(0);
 	//inFrame.copyTo(out,edge);
