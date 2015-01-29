@@ -1,4 +1,5 @@
 #include <iostream>
+#include "data.cpp"
 #include "roomba.cpp"
 
 int running=1;
@@ -20,13 +21,13 @@ int main(){
   IR* irr = new IR(1);
   IR* irlf = new IR(3);
   IR* irlb = new IR(2);
-  mraa::Gpio* uirb = new mraa::Gpio(8);
+  mraa::Gpio* uirb = new mraa::Gpio(5);
   Roomba* roomba= new Roomba(left,right,irf,irr,irlf,irlb,uirb,location,logger);
   int state=0;
   //bool localized = false;
   while(running) {// &&!localized) {
     state = roomba->step(state);
-    usleep(100*1000);
+    //usleep(100*1000);
     //int mode=wf->locating_channel();
   } 
   left->stop();

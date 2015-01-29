@@ -1,15 +1,16 @@
-#include "motion.cpp"
 #include "servo.cpp"
 #include "cv.cpp"
 #include <iostream>
-#include "shortIR.cpp"
+#include "localize.cpp"
 #include "logger.cpp"
+#include "wallfollower.cpp"
 
 #define APPROACH 0
 #define ALIGN 1
 #define PARALLEL 2
 #define CHASE 3
 #define PICKUP 4
+#define LOCALIZING -1
 
 const float FORWARD_SPEED = .75;
 const float ROTATE_SPEED = .75;
@@ -18,8 +19,7 @@ const float PARALLEL_DIST_P = .15;
 const float PARALLEL_ANGLE_P = .2;
 const float PARALLEL_ROTATE_P = 1.0;
 const float FORWARD_SCALE_FACTOR = 0.75;
-const int PIC_DURATION=200;
-const double stopChaseBall=3;
+const double stopChaseBall=5;
 
 class Roomba {
 	IR* irlf;
@@ -32,6 +32,8 @@ class Roomba {
 	mraa::Gpio* midEnd;
 	mraa::Gpio* upEnd;
 	mraa::Gpio* cube;
+
+	Wallfollower* wf;
 
 	VideoCapture* cap;
 	Mat in,test,frame;
@@ -51,6 +53,9 @@ class Roomba {
 	Motion* motion;
 	Logger logger;
 
+	Localize * loc;
+
+
 	float fdist;
 	float lfdist;
 	float lbdist;
@@ -59,6 +64,8 @@ class Roomba {
 	float parallel_angle;
 	float rotateSpeed;
 	float forwardScale;
+	int channel,mode,pm,localized;
+	bool hitWall;
 
 	// Returns whether a sensor distance is in range.
 	bool inRange(float dist) {
@@ -117,6 +124,8 @@ class Roomba {
 		odo = new Odometry(_l, _r, current);
 		motion = new Motion(left,right,odo,_start);
 
+		wf= new Wallfollower(left,right,irf,irr,irlf,irlb,uirb,current);
+
 		inds.pb(0); inds.pb(1); inds.pb(2);
 		cap=new VideoCapture(0);
 		assert (cap->isOpened());
@@ -137,12 +146,16 @@ class Roomba {
 		midEnd->dir(mraa::DIR_IN);
 
 		base = new Motor(10,11,6,false); //base motor -counterclockwise when forward
-		lift = new Motor(8,9,3,true); //lift motor
+		lift = new Motor(8,9,3,false); //lift motor
 		claw=new Servo(15);
 
-		lostCount=0,cubeType=-1,checkCount=PIC_DURATION;
+		lostCount=0,cubeType=-1,checkCount=20;
 
 		for(int i=0;i<10;i++) cap->read(test);
+
+		loc=new Localize("example.txt",current);
+		channel=1,mode=1,pm=1;
+		localized = 0,hitWall=false;
 	}
 
 	void pickUp()
@@ -159,12 +172,11 @@ class Roomba {
 		while(midEnd->read()) usleep(1000);
 		base->stop(); usleep(slp);
 
-		claw->write(0.5);
+		claw->write(0.2);
 		lift->forward(); lift->turnAngle(1700,3); usleep(slp);
 		claw->write(0.8); usleep(slp);
 		lift->turnAngle(215,3); usleep(slp);
 		claw->write(0.15); usleep(slp);
-
 		resetLift(); usleep(slp);
 
 		if(cubeType==1) base->forward();
@@ -231,27 +243,43 @@ class Roomba {
 			cap->read(in);
 		}
 		stop();
-		usleep(20000); 
+		usleep(200000); 
 	}
 	int step(int state) {
 		fdist = irf->getDistance();
 		lfdist = irlf->getDistance();
 		lbdist = irlb->getDistance();
 		rdist = irr->getDistance();
-		bool in=cubeIn();
-		logger.log("Inside State", std::to_string(in));
-		logger.log("Roomba State", std::to_string(state));
-		logger.log("Front IR", std::to_string(fdist));
-		logger.log("Right IR", std::to_string(rdist));
-		logger.log("Left Front IR", std::to_string(lfdist));
-		logger.log("Left Back IR", std::to_string(lbdist));
+		checkCount--;
 		switch (state) {
+
 			// State 0: Go forward ///////////////////////////////////////////////////
+			case LOCALIZING:
+				pm=mode;
+				channel = wf->run_follower(channel);
+				mode=wf->locating_channel();
+				if(mode!=pm)
+				{
+					if(pm==3&&!hitWall)
+					{
+						loc->wallFound(irlf->getDistance());
+						hitWall=true;
+					}
+					else if(pm==3||mode==4||mode==5)
+					{
+						localized=loc->atCorner(irf->getDistance(),mode);
+					}
+				}
+				if(localized!=0)
+				{
+					return APPROACH;
+				}
+				return LOCALIZING;
 			case APPROACH: 
 				setMotor("left", FORWARD_SPEED);
 				setMotor("right", FORWARD_SPEED);
 
-				if(in)
+				if(cubeIn())
 					return PICKUP;
 				else if (fdist < 8 || rdist < 5) { // If close in front or on right
 					stop();
@@ -267,21 +295,11 @@ class Roomba {
 				setMotor("left", ROTATE_SPEED);
 				setMotor("right", -ROTATE_SPEED);
 
-				if(in)
+				if(cubeIn())
 					return PICKUP;
 				else if (lfdist < 9 && fdist > 14){ //If close to wall on left, clear in front
-					motion->rotate(0.3);
-					while(!motion->run()) usleep(1000);
 					stop();
-					if(senseBall(10))
-					{
-						motion->straight(true);
-						return CHASE;
-					}
-					motion->rotate(-0.3);
-					while(!motion->run()) usleep(1000);
-					stop();
-					return PARALLEL;
+					return 2;
 				}
 				else if (!inRange(lfdist) && !inRange(fdist) && !inRange(rdist)){
 					stop();
@@ -302,10 +320,8 @@ class Roomba {
 				rotateSpeed = std::min(PARALLEL_ROTATE_P * (PARALLEL_DIST_P * (parallel_dist - PARALLEL_DIST_TARGET) + PARALLEL_ANGLE_P * parallel_angle), 2.0f);
 				forwardScale = std::max(1-FORWARD_SCALE_FACTOR*std::abs(rotateSpeed),-0.0f) * FORWARD_SPEED;
 
-				logger.log("Rotate Speed", std::to_string(rotateSpeed));
-				logger.log("Forward Scale", std::to_string(forwardScale));
 
-				if(in)
+				if(cubeIn())
 					return PICKUP;
 				else if (rotateSpeed > 0) {
 					setMotor("left", forwardScale);
@@ -316,6 +332,20 @@ class Roomba {
 					setMotor("right", forwardScale);
 				}
 
+				if(checkCount<0)
+				{
+					motion->rotate(0.4);
+					while(!motion->run()) usleep(1000);
+					stop();
+					if(senseBall(10))
+					{
+						motion->straight(true);
+						return CHASE;
+					}
+					motion->rotate(0.4);
+					while(!motion->run()) usleep(1000);
+					stop();
+				}
 
 				if (fdist < 7) { // If small corner
 					stop();
@@ -332,7 +362,22 @@ class Roomba {
 			case CHASE:
 				motion->run();
 				//channel = wf->run_follower(channel);
-				if(!senseBall(6))
+				if(fabs(cubeAngle)>8)
+				{
+					std::cout<<"I see a ball"<<cubeDist<<" away at "<<cubeAngle<<"degrees\n";
+					motion->rotate(cubeAngle*3.14/180);
+					while(!motion->run()) cap->read(test);
+					stop();
+					sleep(10000);
+					motion->straight(true);
+				}
+				if(cubeDist<=20) 
+				{
+					goForward(20); stop();
+					return PICKUP;
+				} 
+				if(cubeIn()) return PICKUP;
+				else if(!senseBall(6))
 				{
 					if(lostCount==3) 
 					{
@@ -343,25 +388,8 @@ class Roomba {
 					{
 						lostCount++;
 						goForward(-10);
-						motion->straight(false);
-						return CHASE;
 					}
 				}
-				std::cout<<"I see a ball"<<cubeDist<<" away at "<<cubeAngle<<"degrees\n";
-				if(fabs(cubeAngle)>8)
-				{
-					motion->rotate(cubeAngle*3.14/180);
-					while(!motion->run()); 
-					stop(); usleep(10000);
-					motion->straight(false);
-					return CHASE;
-				}
-				if(cubeDist<=20) 
-				{
-					goForward(20); stop();
-					return PICKUP;
-				} 
-				else if(in) return PICKUP;
 				else if(irf->getDistance()<stopChaseBall)
 				{
 					goForward(-10); cubeType=-1;
@@ -371,8 +399,8 @@ class Roomba {
 			case PICKUP:
 				if(cubeType==-1)
 				{
-					goForward(-12);
-					motion->straight(false);
+					goForward(-20);
+					motion->straight(true);
 					return CHASE;
 				}
 				pickUp();
