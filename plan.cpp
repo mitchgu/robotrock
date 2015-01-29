@@ -1,9 +1,9 @@
 #include <iostream>
 #include <vector>
 #include <time.h>
-#include "data.cpp"
 #include "mapdealer.cpp"
 #include <cassert>
+#include "motion.cpp"
 
 #define TR(i,it) for(typeof(i.begin()) it=i.begin(); it!=i.end(); it++) 
 #define pb push_back
@@ -37,7 +37,7 @@ public:
 	}
 	cPoint point()
 	{
-		if(pt==NULL) std::cout<<"I AM NULL"<<std::endl;
+		//if(pt==NULL) std::cout<<"I AM NULL"<<std::endl;
 		assert(pt!=NULL);
 		return *pt;
 	}
@@ -95,7 +95,7 @@ class Plan {
 	cNode last;
 	std::vector<cNode*> tree;
 	float xmin; float xmax; float ymin; float ymax;
-	initialized;
+	bool initialized;
 	std::vector<cPoint> this_plan;
 
 	float random(float min, float max) 
@@ -106,6 +106,11 @@ class Plan {
    		float rand_num = ( rand()) / (float) RAND_MAX;
    		rand_num = rand_num*(max-min)+min;
 		return rand_num;
+	}
+	float small_angle(float pass_angle) {
+		int round = floor(pass_angle/6.283);
+		if(fabs(pass_angle-round*6.283)>=fabs(pass_angle-round*6.283-6.283)) return pass_angle-round*6.283-6.283;
+		else return pass_angle-round*6.283;
 	}
 	std::vector<cPoint> resize(std::vector<cPoint> v) {
 		std::vector<cPoint> resize_point = v;
@@ -194,8 +199,8 @@ public:
 				bool point_not_too_close = true;
 				cPoint new_point(new_x,new_y);
 				//std::cout<<std::endl;
-				std::cout<<"getting new point: "<<std::endl;
-				std::cout<<new_x<<" , "<<new_y<<std::endl;
+				//std::cout<<"getting new point: "<<std::endl;
+				//std::cout<<new_x<<" , "<<new_y<<std::endl;
 				TR(tree,node) {
 					point_not_too_close = point_not_too_close&&(!((*node)->distance(new_point)<dis_threshold));
 				}
@@ -214,11 +219,11 @@ public:
 					connectable = connectable || reachable;
 					if(((*nd)->distance(new_point)<nearestdis)&&reachable)
 					{
-						std::cout<<"I am reachable"<<std::endl;
+						//std::cout<<"I am reachable"<<std::endl;
 						nearestdis = (*nd)->distance(new_point);
 						//std::cout<<"NEARESDT "<<nd->point().x()<<" "<<nd->point().y()<<std::endl;
 						nearest = (*nd);
-						std::cout<<nearest<<std::endl;
+						//std::cout<<nearest<<std::endl;
 					}
 				}
 				if (connectable) 
@@ -230,22 +235,22 @@ public:
 						//std::cout<<(*target).x()<<(*target).y()<<std::endl;
 					}
 					cNode* new_node= new cNode(new_point,nearest); 
-					std::cout<<"my nearest point is: "<<nearest->point().x()<<" , "<<nearest->point().y()<<std::endl;
+					//std::cout<<"my nearest point is: "<<nearest->point().x()<<" , "<<nearest->point().y()<<std::endl;
 					tree.pb(new_node);
 					if(end_plan2) 
 					{
 						last = *new_node;
-						std::cout<<"last setting "<<last.point().x()<<" "<<last.point().y()<<std::endl;
+						//std::cout<<"last setting "<<last.point().x()<<" "<<last.point().y()<<std::endl;
 						break;
 					}
 				}
 			}
 		}
-		std::cout<<"last setting "<<last.parent()->point().x()<<" "<<last.parent()->point().y()<<std::endl;
+		//std::cout<<"last setting "<<last.parent()->point().x()<<" "<<last.parent()->point().y()<<std::endl;
 		std::vector<cPoint> return_points;
 		return_points.pb(*target);
 		while(last.parent()!=NULL) {
-			std::cout<<last.point().x()<<" , "<<last.point().y()<<std::endl;
+			//std::cout<<last.point().x()<<" , "<<last.point().y()<<std::endl;
 			return_points.pb(last.point());
 			last = *(last.parent());
 			//std::cout<<last->point().x()<<" , "<<last->point().y()<<std::endl;
@@ -259,8 +264,12 @@ public:
 		if (state == 0) {  //start
 			if(!initialized) {
 				this_plan = plan();
+				for(int i=0; i<this_plan.size();i++) {
+					std::cout<<"point"<<i+1<<": "<<this_plan[i].x()<<" , "<<this_plan[i].y()<<std::endl;
+				}
 				count = 0;
-				float angle = this_plan[count].angle(this_plan[count+1])-start_angle;
+				float angle = small_angle(this_plan[count].angle(this_plan[count+1])-start_angle);
+				std::cout<<"I am initialized state 0, turn: "<<angle<<std::endl;
 				motion->rotate(angle);
 				initialized = true;
 				return 0;
@@ -275,8 +284,9 @@ public:
 		}
 		if (state == 1) {
 			if(!initialized) {
-				float angle = this_plan[count].angle(this_plan[count+1])-odo->getAngle();
+				float angle = small_angle(this_plan[count].angle(this_plan[count+1])-odo->getAngle());
 				motion->rotate(angle);
+				std::cout<<"I am initialized state 1, turn: "<<angle<<std::endl;
 				initialized = true;
 				return 1;
 			}
@@ -292,6 +302,7 @@ public:
 			if(!initialized) {
 				float distance = this_plan[count].distance(this_plan[count+1]);
 				motion->straight(distance);
+				std::cout<<"I am initialized state 2, forward: "<<distance<<std::endl;
 				initialized = true;
 				return 2;
 			}
@@ -300,7 +311,7 @@ public:
 				else{
 					initialized = false;
 					count++;
-					if (count>=(this_plan.size()-1) return 3;
+					if (count>=(this_plan.size()-1)) return 3;
 					else return 1;
 				}
 

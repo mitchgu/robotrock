@@ -4,7 +4,7 @@
 #include <string>
 #include <deque>  
 #include <algorithm>
-//#include "data.cpp"
+#include "data.cpp"
 #include <assert.h> 
 
 #define tr(i) for(typeof(i.begin()) it=i.begin(); it!=i.end(); it++) 

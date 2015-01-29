@@ -1,6 +1,5 @@
 #include <iostream>
 #include "plan.cpp"
-
 int running=1;
 
 void sig_handler(int signo)
@@ -19,15 +18,15 @@ int main()
 	Motor* left = new Motor(0,2,4,false);
 	Motor* right = new Motor(4,6,2,true);
 	Location* location = new Location(0.0,0.0,0.0);
-	Location* start(96,96,0);
-	cPoint target(144,96);
-	Plan plan(outerWall,left,right,location);
-	plan.setStart(start);
-	plan.setTarget(target);
+	Location* start= new Location(144,96,0);
+	cPoint target(96,96);
+	Plan* plan=new Plan(outerWall,left,right,location);
+	plan->setStart(start);
+	plan->setTarget(target);
 //	std::cout<<"i HAVE BEEN HERE"<<std::endl;
 	int state = 0;
-	while(running && (channel!=3)) {
-		state = plan.run(state);
+	while(running && (state!=3)) {
+		state = plan->run(state);
 	}
 	left->stop(); right->stop();
 	sleep(1);
