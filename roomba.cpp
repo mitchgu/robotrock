@@ -10,6 +10,7 @@
 #define PARALLEL 2
 #define CHASE 3
 #define PICKUP 4
+#define HOMING 5
 
 const float FORWARD_SPEED = .65;
 const float ROTATE_SPEED = .75;
@@ -20,6 +21,7 @@ const float PARALLEL_ROTATE_P = 1.0;
 const float FORWARD_SCALE_FACTOR = 1.5;
 const int PIC_DURATION=200;
 const double stopChaseBall=3;
+const int HOMING_TIME=120000;
 
 class Roomba {
 	IR* irlf;
@@ -386,7 +388,7 @@ class Roomba {
 				//channel = wf->run_follower(channel);
 				homeDetected=false;
 				bool sensed=senseBall(6);
-				if(homeDetected&&
+				if(homeDetected&&timeDiff()>HOMING_TIME) return HOMING;
 				if(!sensed)
 				{
 					if(lostCount==3) 
@@ -443,6 +445,27 @@ class Roomba {
 				}
 				pickUp();
 				return APPROACH;
+			case HOMING:
+				stop(); sleep(1);
+				bool found=false;
+				while(!found)
+				{
+					REP(i,samps) cap->read(in);
+					std::cout << "Grabbed homing frame" << std::endl;
+					downSize(in,frame); //downsized
+					maxFilter(frame,inds);
+					fill(frame,0,2);
+					vector<Vec4i> lines=hough(frame);
+					pdd ret=procHough(lines,frame);
+					if(ret.first==-1) continue;
+					found=true;
+					motion->rotate(ret.second*3.14/180);
+					while(!motion->run()) usleep(1000);
+					stop(); usleep(1000);
+					motion->straight(ret.first,false);
+					while(!motion->run()) usleep(1000);
+					stop(); usleep(1000);
+				}
 		}
 	}
 };
