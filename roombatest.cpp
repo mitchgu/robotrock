@@ -11,7 +11,7 @@ void sig_handler(int signo)
     }
 };
 
-int main(){
+int main(int argc, char** argv){
   signal(SIGINT, sig_handler);
   Logger logger;
   Motor* left = new Motor(0,2,4,false);
@@ -22,7 +22,9 @@ int main(){
   IR* irlf = new IR(3);
   IR* irlb = new IR(2);
   mraa::Gpio* uirb = new mraa::Gpio(5);
-  Roomba* roomba= new Roomba(left,right,irf,irr,irlf,irlb,uirb,location,logger);
+  //std::cout<<"ARGUMENT "<<argv[1]<<std::endl;
+  bool greenSide=(argv[1][0]=='1');
+  Roomba* roomba= new Roomba(left,right,irf,irr,irlf,irlb,uirb,location,logger,greenSide);
   int state=0;
   //bool localized = false;
   while(running) {// &&!localized) {
@@ -32,6 +34,10 @@ int main(){
   } 
   left->stop();
   right->stop();
+  Servo* doorl=new Servo(13);
+  Servo* doorr=new Servo(12);
+  doorl->release();
+  doorr->release();
   sleep(1); 
   return 0;
 }

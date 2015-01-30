@@ -1,4 +1,5 @@
 #include <iostream>
+#include "data.cpp"
 #include "motion.cpp"
 
 int running=1;
@@ -29,6 +30,7 @@ int main()
 	{
 		double ravg=0,lavg=0;
 		right->writeVolt(i);
+		left->stop();
 		usleep(500000);
 		for(int j=0;running&&j<reps;j++)
 		{
@@ -41,10 +43,11 @@ int main()
 		sleep(1);
 	}
 	*/
-	motion->straight(true);
+	left->setSpeed(0.5);
+	right->setSpeed(0.5);
 	while(running) 
 	{
-		motion->run();
+		//motion->run();
 		usleep(100000);
 	}
 	left->stop(); right->stop();

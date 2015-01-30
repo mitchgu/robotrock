@@ -1,4 +1,3 @@
-//#include "data.cpp"
 #include <math.h>
 #include <iostream>
 #include <fstream>
@@ -12,7 +11,7 @@
 const double robWidth=16;
 const double robFLength=7;
 const double robBLength=7;
-double errorMargin=9;
+double errorMargin=8;
 const double pErrorMargin=0.00;
 const double angleError=0.4;
 
@@ -27,6 +26,8 @@ class Localize {
 	std::vector<Wall> outerWall;
 	std::vector<cPoint> viscPoints;
 	std::vector<std::pair<cPoint,Wall> > potentialLoc;
+	//Location* begMapLoc; Location *begIntLoc;
+	double dx,dy,dth;
 public:
 	Localize(char* filename, Location *_start)
 	{
@@ -97,10 +98,16 @@ public:
 			}
 		}
 	}
-	bool atCorner(double frontDist,int mode)
+	int atCorner(double frontDist,int mode)
 	{
-		if(frontDist==100||mode==5) frontDist=-robFLength;
-		if(pmode==5) frontDist=-16;
+		if(frontDist==100||mode==5) frontDist=-16;
+		else if(pmode==5) 
+		{
+			if(mode==5) frontDist=-20;
+			frontDist=-16;
+		}
+		else frontDist=3;
+		std::cout<<"MODE IS"<<mode<<std::endl;
 		pmode=mode;
 		cPoint* at=location->point();
 		int vs=viscPoints.size();
@@ -150,13 +157,20 @@ public:
 		viscPoints.pb(*at);
 		debug();
 		pl=potentialLoc.size();
-		if(pl==0) return false;
+		if(pl==0) return -1;
 		REP(i,pl)
 		{
-			if(potentialLoc[i].first!=potentialLoc[0].first) return false;
+			if(potentialLoc[i].first!=potentialLoc[0].first) return 0;
 		}
 		std::cout<<"I'm at "<<potentialLoc[0].first.x()<<" "<<potentialLoc[0].first.y()<<std::endl;
-		return true;
+		angle=atan2(potentialLoc[0].second.ye()-potentialLoc[0].second.ys(),potentialLoc[0].second.xe()-potentialLoc[0].second.xs());
+		dx= potentialLoc[0].first.x()-location->x();
+		dy=potentialLoc[0].first.y()-location->y();
+		dth=angle-location->theta();
+		return 1;
+	}
+	Location getMapLoc()
+	{
 	}
 	void debug()
 	{

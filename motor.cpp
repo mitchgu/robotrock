@@ -6,17 +6,16 @@
 #include <mraa.hpp>
 #include <signal.h>
 #include <math.h>
-#include "data.cpp"
 #include "i2c.cpp"
 
-#define MX 5
+#define MX 6
 #define LEFT false
 #define RIGHT true
 
 struct timeval start,end;
 
 double dt;
-int count;
+int cnt;
 
 //const double sKp=0.04, sKi=0.000005, sKd=0.0005;
 double sKp=0.12, sKi=0.000001, sKd=0.0003;
@@ -24,21 +23,21 @@ double sKp=0.12, sKi=0.000001, sKd=0.0003;
 void tickCounter(void* args)
 {
 	//std::cout<<"falling"<<std::endl;
-	count++;
+	cnt++;
 }
 
 void edge_handler(void* args)
 {
 	//std::cout<<"falling"<<std::endl;
-	if(count==0) gettimeofday(&start, NULL);
-	if(count==MX)
+	if(cnt==0) gettimeofday(&start, NULL);
+	if(cnt==MX)
 	{
 		gettimeofday(&end, NULL);
 		int diffSec = end.tv_sec - start.tv_sec;
 		int diffUSec = end.tv_usec - start.tv_usec;
 		dt = (double)diffSec + 0.000001*diffUSec;
 	}
-	count++;
+	cnt++;
 }
 
 class Motor
@@ -76,8 +75,8 @@ public:
 	void forward()
 	{
 		forw = true;
-		if(side) writePWM(i2c, dpin, 0);
-		else writePWM(i2c, dpin, 1);
+		if(side) writePWM(i2c, dpin, 1);
+		else writePWM(i2c, dpin, 0);
 		/*
 		if(side) dir->write(0);
 		else dir->write(1);
@@ -86,8 +85,8 @@ public:
 	void backward()
 	{
 		forw = false;
-		if(side) writePWM(i2c, dpin, 1);
-		else writePWM(i2c, dpin, 0);
+		if(side) writePWM(i2c, dpin, 0);
+		else writePWM(i2c, dpin, 1);
 		/*
 		if(side) dir->write(1);
 		else dir->write(0);
@@ -129,12 +128,12 @@ public:
 		//if(side==LEFT) writeVolt(0.1489*set+0.0367);
 		//else writeVolt(0.1568*set+0.0375);
 		if (forw == true) {
-			if(side==LEFT) writeVolt(0.1613*set+0.1124);
-			else writeVolt(0.2701*set+0.1828);
+			if(side==LEFT) writeVolt(0.2162*set+0.1034);
+			else writeVolt(0.2244*set+0.0844);
 		}
 		else {
-			if(side==LEFT) writeVolt(0.1613*set+0.1124);
-			else writeVolt(0.401*set+0.2828);
+			if(side==LEFT) writeVolt(0.2216*set+0.0977);
+			else writeVolt(0.218*set+0.1048);
 		}
 	}
 	float getSpeed() { return targetRPS; }
@@ -143,31 +142,31 @@ public:
 	*/
 	void turnTicks(int ticks, double speed)
 	{
-		count=0;
+		cnt=0;
 		setSpeed(speed);
 		hall->isr(mraa::EDGE_RISING, tickCounter, hall);
-		while(count<=ticks)
+		while(cnt<=ticks)
 		{
-			//std::cout<<"ticks "<<ticks<<" count "<<count<<std::endl;
+			//std::cout<<"ticks "<<ticks<<" cnt "<<cnt<<std::endl;
 			usleep(100);
 		}
 		hall->isrExit();
 		stop();
 	}
-	void turnAngle(int angle, double speed)
+	void turnAngle(int angle, double speed, int tpr=480)
 	{
-		int ticks=(angle/360.0)*480.0;
+		int ticks=(angle/360.0)*tpr;
 		turnTicks(ticks,speed);
 	}
 	double rps()
 	{
-		count=0; int its=0;
+		cnt=0; int its=0;
 		hall->isr(mraa::EDGE_RISING, edge_handler, hall);
-		while(count<=MX&&(++its)<500) usleep(100);
+		while(cnt<=MX&&(++its)<500) usleep(100);
 		if(its==500) return 0;
 		hall->isrExit();
 		//std::cout<<"delay "<<dt<<std::endl;
-		double out=4*MX/(1920.0*dt);
+		double out=4*MX/(3200.0*dt);
 		//std::cout<<"Rps is "<<out<<std::endl;
 		return out;
 	}

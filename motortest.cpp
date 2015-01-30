@@ -1,4 +1,5 @@
 #include <iostream>
+#include "data.cpp"
 #include "motion.cpp"
 
 int running=1;
@@ -20,18 +21,11 @@ int main()
 	Location* location = new Location(0.0,0.0,0.0);
 
 	Motion* motion = new Motion(left,right,odo,location); 
+	left->forward();
+	right->forward();
 	//motion->rotate(1.57);	
-	motion->straight(8);
-	
-	for(int s=0;s<4;s++)
-	{
-		motion->straight(24);
-		while(running&&!motion->run()) usleep(10000);
-		sleep(0.1);
-		motion->rotate(1.57);
-		while(running&&!motion->run()) usleep(10000);
-		sleep(0.1);
-	}
+	motion->straight(24,false);
+	while(running&&!motion->run()) usleep(800000);
 	left->stop(); right->stop();
 	sleep(1);
 	return 0;

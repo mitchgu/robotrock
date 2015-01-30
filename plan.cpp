@@ -284,7 +284,7 @@ public:
 		}
 		if (state == 1) {
 			if(!initialized) {
-				float angle = small_angle(this_plan[count].angle(this_plan[count+1])-odo->getAngle());
+				float angle = small_angle(this_plan[count].angle(this_plan[count+1])-this_plan[count-1].angle(this_plan[count]));
 				motion->rotate(angle);
 				std::cout<<"I am initialized state 1, turn: "<<angle<<std::endl;
 				initialized = true;

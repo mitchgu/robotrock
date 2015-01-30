@@ -26,6 +26,7 @@ int main(){
 	while(running &&!localized) {
 		channel = wf->run_follower(channel);
 		int mode=wf->locating_channel();
+		std::cout<<"I am in channel:"<<channel<<std::endl;
 	} 
 	left->stop();
 	right->stop();

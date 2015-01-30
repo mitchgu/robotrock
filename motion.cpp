@@ -82,7 +82,6 @@ protected:
 		}
 		else
 		{
-			std::cout<<"diff is: "<<diff<<std::endl;
 			l->setSpeed(baseSpeed+diff); r->setSpeed(baseSpeed-diff);
 		}
 		if(target)
@@ -94,7 +93,7 @@ protected:
 public:
 	Motion( Motor* _l, Motor* _r,Odometry* _odo, Location* _current) 
 	{
-		bKp=1.5, bKi=0.5, bKd=0.5;
+		bKp=2, bKi=0, bKd=0;
 		smKp=3.6, smKi=0.03, smKd=1.6;
 		mKp=3, mKi=0.1, mKd=0.15;
 		l = _l;

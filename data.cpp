@@ -70,7 +70,7 @@ public:
 	}
 	float angle(cPoint other)
 	{
-		float now_angle = atan2(fabs(other.x()-x())/fabs(other.y()-y()));
+		float now_angle = atan2(fabs(other.x()-x()),fabs(other.y()-y()));
 		if((other.x()>x())&&(other.y()>y())) return now_angle;
 		if((other.x()>x())&&(other.y()<y())) return 3.1416-now_angle;
 		if((other.x()<x())&&(other.y()<y())) return 3.1416+now_angle;

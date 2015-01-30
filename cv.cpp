@@ -31,9 +31,9 @@ pdd getDist(int gi, int gj)
 	{
 		file>>x>>y;
 		file>>i>>j;
-		std::cout<<x<<" "<<y<<" "<<i<<" "<<j<<std::endl;
+		//std::cout<<x<<" "<<y<<" "<<i<<" "<<j<<std::endl;
 		double dist=(x-gi)*(x-gi)+(y-gj)*(y-gj);
-		std::cout<<dist<<std::endl;
+		//std::cout<<dist<<std::endl;
 		if(dist<minMatch)
 		{
 			minMatch=dist;
@@ -78,8 +78,8 @@ void maxFilter(Mat& frame, std::vector<int> inds)
 				double multA,multB;
 				bool Y=false;
 				if(ind==0) multA=1.22,multB=1.5;
-				if(ind==1) multA=multB=1.15;
-				if(ind==2) multA=multB=1.15;
+				if(ind==1) multA=multB=1.1;
+				if(ind==2) multA=multB=1.1;
 				if(ind==3) Y=true,ind=1,multA=0.8,1.12;
 				if(ind==4) Y=true,ind=2,multA=0.6,1.05;
 				if(cur[ind]>75&&cur[ind]>multA*cur[(ind+1)%3]&&cur[ind]>multB*cur[(ind+2)%3])  
@@ -397,9 +397,9 @@ void add(Vec2i &pt, double r, Vec4i line)
 	double s=c*m;
 	pt[0]+=r*c; pt[1]+=r*s;
 }
-pdd procHough(vector<Vec4i> lines, Mat &inFrame)
+pdd procHough(vector<Vec4i> rlines, Mat &inFrame, double &oneAngle)
 {
-	lines=bundle(lines);
+	vector<Vec4i> lines=bundle(rlines);
 	std::cout<<"number of bundels is"<<lines.size()<<std::endl;
 	REP(j,lines.size() )
 	{
@@ -409,14 +409,22 @@ pdd procHough(vector<Vec4i> lines, Mat &inFrame)
 	if(lines.size()>=2) 
 	{
 		Vec2i pt= inter(lines[0],lines[1]);
-		std::cout<<lines[0][0]<<","<<lines[0][1]<<" "<<lines[0][2]<<","<<lines[0][3]<<std::endl;
-		std::cout<<lines[1][0]<<","<<lines[1][1]<<" "<<lines[1][2]<<","<<lines[1][3]<<std::endl;
+		//std::cout<<lines[0][0]<<","<<lines[0][1]<<" "<<lines[0][2]<<","<<lines[0][3]<<std::endl;
+		//std::cout<<lines[1][0]<<","<<lines[1][1]<<" "<<lines[1][2]<<","<<lines[1][3]<<std::endl;
 		rectangle( inFrame, Point( pt[0], pt[1] ), Point( pt[0]+5,pt[1]+5), Scalar( 0, 255, 0 ), -1, 8 );
 		add(pt,100,lines[0]); add(pt,100,lines[1]);
 		std::cout<<"interior point is "<<pt[0]<<" "<<pt[1]<<std::endl;
 		rectangle( inFrame, Point( pt[0], pt[1] ), Point( pt[0]+5,pt[1]+5), Scalar( 0, 0, 255 ), -1, 8 );
 		ret=mp(pt[0],pt[1]);
 		std::cout<<"interior point is "<<ret.first<<" inches away to deg"<<ret.second<<std::endl;
+		oneAngle=-3;
+	}
+	else if(rlines.size()>=1)
+	{
+		int X=(rlines[0][0]+rlines[0][2])/2;
+		int Y=(rlines[0][1]+rlines[0][3])/2;
+		ret=mp(X,Y);
+		oneAngle=atan2(rlines[0][3]-rlines[0][1],rlines[0][2]-rlines[0][0]);
 	}
 	return ret;
 }

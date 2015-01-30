@@ -5,11 +5,10 @@ const float Kpw = 0.05, Kdw = 35, Kiw = 0;
 const float threshelddis = 9; //for the first approaching to wall
 const float distance_of_irlfb = 2.0;
 const float big_corner_turn_omega = 0.08;
-const float base_speed = 1.0; //parallel run base speed
+const float base_speed = 0.7; //parallel run base speed
 const float slp=0.7;
 const float distance_to_wall=5.5;
 const float small_corner_rotate_angle=1.55;
-const float big_corner_rotate_angle= -1.9;
 const float robotwidth =12;
 const float rotate_stuck_time = 10;
 const float parallel_run_stuck_time = 15;
@@ -18,9 +17,10 @@ const float small_corner_threshold_distance=9.0;
 const float big_corner_constant = 0.7;
 const float small_corner_turn_stuck_time = 10;
 const float big_wall_rotate_stuck_time = 10;
-const float parallel_to_wall_speed=0.6;
+const float parallel_to_wall_speed=0.5;
 const float diff_threshold = 0.20;
 const float turning_const = 0.3;
+const float lir_to_wall = 2;
 
 class Wallfollower {
 	IR* irlf;
@@ -324,9 +324,9 @@ public:
 		}
 
 		if(channel == 5) {                                 //case 5: big angle corner dealer
-			//std::cout<<"channel 5: big angle corner dealer! "<<std::endl;
+			std::cout<<"channel 5: big angle corner dealer! "<<std::endl;
 			if (channel5_mode == 0){
-				//std::cout<<"big angle corner first time straight for a little! "<<std::endl;
+				std::cout<<"big angle corner first time straight for a little! "<<std::endl;
 				if (!initialized) {
 					setup_big_corner_dealer();
 					initialized = true;
@@ -352,7 +352,7 @@ public:
 				}
 			}
 			if (channel5_mode == 1){
-				//std::cout<<"big angle corner go parallel to the wall! "<<std::endl;
+				std::cout<<"big angle corner go parallel to the wall! "<<std::endl;
 				if (!initialized) {
 					gettimeofday(&stktv,NULL);
 					check_stuck_base_time = (unsigned long long)(stktv.tv_sec)*1000 +
@@ -492,7 +492,7 @@ public:
 			(unsigned long long)(stktv.tv_usec) / 1000;
 		left->forward();
 		right->forward();
-		float big_corner_distance = before_turn_distance+2;
+		float big_corner_distance = before_turn_distance+lir_to_wall;
 		big_turn_rspeed = (big_corner_distance+robotwidth)*big_corner_turn_omega;
 		big_turn_lspeed = big_corner_distance * big_corner_turn_omega;
 		left->setSpeed(big_turn_lspeed);
@@ -527,8 +527,8 @@ public:
 	*/
 	int incorner(){   //0 for no corner, 1 for corner almost 90 degrees, 2 for corner almos
 		if (irf->getDistance()<=small_corner_threshold_distance) { return 1;}
-		//std::cout<<"irlf:  "<<irlf->getDistance()<<std::endl;
-		if (irlf->getDistance()==100) { 
+		std::cout<<"irlf:  "<<irlf->getDistance()<<std::endl;
+		if (irlf->getDistance()==20) { 
 			if(cornercnt>1) {
 				cornercnt++;
 			} 

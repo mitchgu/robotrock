@@ -6,7 +6,7 @@ const double upper=0.491, lower=0.471;
 
 #define SHIELD_I2C_ADDR 0x40
 
-std::vector<uint8_t> sregisters = {
+uint8_t sregisters[] = {
   6,   // output 0
   10,  // output 1
   14,  // output 2
