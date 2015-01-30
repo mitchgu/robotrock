@@ -25,7 +25,6 @@ const float FORWARD_SCALE_FACTOR = 1.2;
 const int PIC_DURATION=200;
 const double stopChaseBall=5;
 const int HOMING_TIME=0;//120000;
-const float HOME_BASE_CHECK_TIME = 120; 
 
 class Roomba {
 	IR* irlf;
@@ -49,7 +48,7 @@ class Roomba {
 	VideoWriter* outVid,*recVid;
 	struct timeval tv,ts,stktv;
 	float stuckThreshold;
-	unsigned long long gameStart,checkBase;
+	unsigned long long checkBase;
 
 	Motor* left;
 	Motor* right;
@@ -92,7 +91,6 @@ class Roomba {
 		gettimeofday(&stktv, NULL);
 		unsigned long long ms = (unsigned long long)(stktv.tv_sec)*1000 + (unsigned long long)(stktv.tv_usec) / 1000;
 		checkBase =  ms;
-		if((ms-gameStart)>1000*HOME_BASE_CHECK_TIME) return HOMING;
 		if(state == APPROACH) stuckThreshold = 4;
 		else if(state == ALIGN) stuckThreshold = 3;
 		else if(state == PARALLEL) stuckThreshold = 7;
@@ -107,6 +105,16 @@ class Roomba {
 			odo->run();
 			stuckThreshold = 4;
 			base_gyro = odo->getAngle(); 
+		}
+		else if(state == TROUBLE)
+		{
+			stop(); usleep(500000);
+			setMotor("left",-FORWARD_SPEED);
+			setMotor("right",-FORWARD_SPEED);
+			usleep(500000);
+			stop();
+			setMotor("left",ROTATE_SPEED);
+			setMotor("right",-ROTATE_SPEED);
 		}
 		return state;
 	}
@@ -198,8 +206,8 @@ class Roomba {
 		motion->setMConstants(0.5,0,0);
 
 		gettimeofday(&stktv, NULL);
-		gameStart = (unsigned long long)(stktv.tv_sec)*1000 + (unsigned long long)(stktv.tv_usec) / 1000;
-		checkBase = gameStart;
+		checkBase = (unsigned long long)(stktv.tv_sec)*1000 + (unsigned long long)(stktv.tv_usec) / 1000;
+		stuckThreshold = 4;
 		gettimeofday(&ts, NULL); 
 		
 	}
@@ -360,7 +368,7 @@ class Roomba {
 		switch (state) {
 			// State 0: Go forward ///////////////////////////////////////////////////
 			case APPROACH:
-				if(checkStuck()) return TROUBLE;
+				if(checkStuck()) return transition(TROUBLE);
 				setMotor("left", FORWARD_SPEED);
 				setMotor("right", FORWARD_SPEED);
 
@@ -408,7 +416,7 @@ class Roomba {
 				}
 				// State 2: Drive parallel to wall //////////////////////////////////////
 			case PARALLEL: 
-				if(checkStuck()) return TROUBLE;
+				if(checkStuck()) return transition(TROUBLE);
 				parallel_dist = 0.5 * lfdist + 0.5 * lbdist;
 				parallel_angle = lfdist - lbdist;
 
@@ -442,7 +450,7 @@ class Roomba {
 					usleep(300*1000);
 				}
 */
-				//if (lfdist > 15 ) return BIGCORNER;
+				if (lfdist > 15 ) return BIGCORNER;
 				if (fdist < 7) { // If small corner
 					stop();
 					return transition(ALIGN);
@@ -457,7 +465,7 @@ class Roomba {
 				}
 				//chase cube
 			case CHASE:
-				if(checkStuck()) return TROUBLE;
+				if(checkStuck()) return transition(TROUBLE);
 				motion->run();
 				//channel = wf->run_follower(channel);
 				homeDetected=false;
@@ -505,7 +513,7 @@ class Roomba {
 				setupChase();
 				return CHASE;
 			case PICKUP:
-				if(checkStuck()) return TROUBLE;
+				if(checkStuck()) return transition(TROUBLE);
 				if(!cubein) return transition(APPROACH);
 				if(cubeType==-1)
 				{
@@ -555,14 +563,6 @@ class Roomba {
 				sleep(1);
 				return STOP;
 			case TROUBLE:
-				stop(); usleep(500000);
-				setMotor("left",-FORWARD_SPEED);
-				setMotor("right",-FORWARD_SPEED);
-				usleep(500000);
-				stop(); usleep(500000);
-				setMotor("left",ROTATE_SPEED);
-				setMotor("right",-ROTATE_SPEED);
-
 				if(fdist==20) return transition(APPROACH);
 				else
 				{
@@ -570,11 +570,11 @@ class Roomba {
 					return TROUBLE;
 				}
 			case BIGCORNER:
-				if(checkStuck()) return TROUBLE;
+				if(checkStuck()) return transition(TROUBLE);
 				odo->run();
-				setMotor("left",(toWall+2)*0.08);
-				setMotor("right",(toWall+14)*0.08);
-				if((fdist>9 && lfdist>7) || odo->getAngle()>base_gyro-3.14) 
+				setMotor("left",(toWall+1)*0.08);
+				setMotor("right",(toWall+13)*0.08);
+				if((fdist>9 && lfdist>7) || odo->getAngle()>base_gyro-1.5) // only move on if left is close and has rotated >90 degrees
 				{
 					usleep(10000);
 					return BIGCORNER;
