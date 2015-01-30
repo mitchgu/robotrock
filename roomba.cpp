@@ -18,7 +18,7 @@
 
 const float FORWARD_SPEED = .65;
 const float ROTATE_SPEED = .75;
-const float PARALLEL_DIST_TARGET = 5;
+const float PARALLEL_DIST_TARGET = 4.5;
 const float PARALLEL_DIST_P = 0.2;
 const float PARALLEL_ANGLE_P = .35;
 const float PARALLEL_ROTATE_P = .45;
@@ -26,7 +26,7 @@ const float FORWARD_SCALE_FACTOR = 1.3;
 const int PIC_DURATION=200;
 const double stopChaseBall=1;
 const int HOMING_TIME=120*1000;
-const int STOP_TIME=172*1000;
+const int STOP_TIME=179*1000;
 
 class Roomba {
 	IR* irlf;
@@ -116,6 +116,9 @@ class Roomba {
 			setMotor("left",-FORWARD_SPEED);
 			setMotor("right",-FORWARD_SPEED);
 			usleep(500000);
+			stop();
+			motion->rotate(-0.5);
+			while(!motion->run() ) usleep(1000);
 			stop();
 			setMotor("left",ROTATE_SPEED);
 			setMotor("right",-ROTATE_SPEED);
@@ -416,7 +419,7 @@ class Roomba {
 					}
 					return transition(PARALLEL);
 				}
-				else if(bassDropped&&(ms-dropTime)>(10*1000) )
+				else if(bassDropped&&(dt-dropTime)>(10*1000) )
 				{
 					return FINISH;
 				}
@@ -469,7 +472,7 @@ class Roomba {
 					while(!motion->run()) usleep(1000);
 					stop();
 				}
-				else if(bassDropped&&(ms-dropTime)>(10*1000) )
+				else if(bassDropped&&(dt-dropTime)>(10*1000) )
 				{
 					return FINISH;
 				}
@@ -640,22 +643,25 @@ class Roomba {
 				std::cout<<"IN STOP WTF IS HAPPENNIG"<<std::endl;
 				motion->rotate(3.14);
 				while(!motion->run()) usleep(1000);
-				stop(); usleep(1000);
+				stop(); usleep(200000);
+				std::cout<<"AM IG REEN? "<<greenSide<<std::endl;
 				if(!greenSide)
 				{
 					doorr->write(-0.2);
-					goForward(6);
+					sleep(1);
+					goForward(15);
 					doorr->write(-1.1);
 				}
 				else
 				{
 					doorl->write(-0.2);
-					goForward(6);
+					sleep(1);
+					goForward(15);
 					doorl->write(-1);
 				}
-				sleep(1);
 				bassDropped=true;
 				dropTime=timeDiff();
+				std::cout<<"dropTime"<<dropTime<<std::endl;
 				return transition(APPROACH);
 			case TROUBLE:
 				if(dt>STOP_TIME)  return FINISH;
@@ -677,17 +683,17 @@ class Roomba {
 				}
 				else return transition(ALIGN);
 			case FINISH:
-				while(!motion->run()) usleep(1000);
-				stop(); usleep(1000);
+				std::cout<<"FINISH TIME "<<timeDiff()<<std::endl;
+				stop(); usleep(100000);
 				doorr->write(-0.2);
 				doorl->write(-0.2);
+				/*
 				goForward(6);
 				doorr->write(-1.0);
 				doorl->write(-0.9);
 				sleep(1);
-				bassDropped=true;
-				dropTime=timeDiff();
-				stop(); sleep(10);
+				*/
+				stop(); sleep(100);
 		}
 	}
 };

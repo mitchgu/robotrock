@@ -25,7 +25,7 @@ int main(int argc, char** argv){
   //std::cout<<"ARGUMENT "<<argv[1]<<std::endl;
   bool greenSide=(argv[1][0]=='1');
   Roomba* roomba= new Roomba(left,right,irf,irr,irlf,irlb,uirb,location,logger,greenSide);
-  int state=0;
+  int state=6;
   //bool localized = false;
   while(running) {// &&!localized) {
     state = roomba->step(state);
