@@ -31,8 +31,9 @@ pdd getDist(int gi, int gj)
 	{
 		file>>x>>y;
 		file>>i>>j;
-		//std::cout<<x<<" "<<y<<" "<<i<<" "<<j<<std::endl;
+		std::cout<<x<<" "<<y<<" "<<i<<" "<<j<<std::endl;
 		double dist=(x-gi)*(x-gi)+(y-gj)*(y-gj);
+		std::cout<<dist<<std::endl;
 		if(dist<minMatch)
 		{
 			minMatch=dist;
@@ -307,7 +308,7 @@ vector<Vec4i> hough(Mat &inFrame)
 	blur(gray, blu, Size(3,3));
 	Canny(blu, edge, edgeThresh, edgeThresh*3, 3);
 	vector<Vec4i> lines;
-	HoughLinesP(edge, lines, 1, CV_PI/3600.0, 40, 40, 20 );
+	HoughLinesP(edge, lines, 1, CV_PI/3600.0, 35, 40, 30 );
 	//std::cout<<std::endl<<std::endl<<"HOUGHING"<<std::endl;
 	for( size_t i = 0; i < lines.size(); i++ )
 	{
@@ -325,12 +326,12 @@ double angle(Vec4i a, Vec4i b)
 	double out= B.three_points_angle(&C,&A);
 	double ang=fabs(out);
 	ang=min(ang,CV_PI-ang);
-	if(ang>0.25)
+	/*if(ang>0.25)
 	{
 		std::cout<<a[0]<<","<<a[1]<<" "<<a[2]<<","<<a[3]<<std::endl;
 		std::cout<<b[0]<<","<<b[1]<<" "<<b[2]<<","<<b[3]<<std::endl;
 		std::cout<<"Angle is"<<ang<<std::endl;
-	}
+	}*/
 	return out;
 }
 Vec2i inter(Vec4i a, Vec4i b)
@@ -375,8 +376,23 @@ struct interior
 };
 void add(Vec2i &pt, double r, Vec4i line)
 {
-	if(abs(line[3]-pt[1])<abs(line[1]-pt[1]) ) r=-r;
-	double m=(line[3]-line[1])/(1.0*(line[2]-line[0]) );
+	if(line[2]==line[0])
+	{
+		double c=1,s=0;
+		if(abs(line[3]-pt[1])<abs(line[1]-pt[1]) ) r=-r;
+		return;
+	}
+	if(line[2]<line[0])
+	{
+		std::swap(line[3],line[1]);
+		std::swap(line[2],line[0]);
+	}
+	if(abs(line[2]-pt[0])==abs(line[0]-pt[0]) )
+	{
+		if(abs(line[3]-pt[1])<abs(line[1]-pt[1]) ) r=-r;
+	}
+	else if(abs(line[2]-pt[0])<abs(line[0]-pt[0]) ) r=-r;
+	double m=((line[3]-line[1])/(1.0*(line[2]-line[0]) ));
 	double c=1/sqrt(1+m*m);
 	double s=c*m;
 	pt[0]+=r*c; pt[1]+=r*s;
@@ -389,15 +405,17 @@ pdd procHough(vector<Vec4i> lines, Mat &inFrame)
 	{
 		line( inFrame, Point(lines[j][0], lines[j][1]), Point(lines[j][2], lines[j][3]), Scalar(0,255,255), 3, CV_AA);
 	}
-	pdd ret(-1,-1);
+	pii ret(-1,-1);
 	if(lines.size()>=2) 
 	{
 		Vec2i pt= inter(lines[0],lines[1]);
+		std::cout<<lines[0][0]<<","<<lines[0][1]<<" "<<lines[0][2]<<","<<lines[0][3]<<std::endl;
+		std::cout<<lines[1][0]<<","<<lines[1][1]<<" "<<lines[1][2]<<","<<lines[1][3]<<std::endl;
 		rectangle( inFrame, Point( pt[0], pt[1] ), Point( pt[0]+5,pt[1]+5), Scalar( 0, 255, 0 ), -1, 8 );
-		add(pt,70,lines[0]); add(pt,70,lines[1]);
+		add(pt,100,lines[0]); add(pt,100,lines[1]);
 		std::cout<<"interior point is "<<pt[0]<<" "<<pt[1]<<std::endl;
 		rectangle( inFrame, Point( pt[0], pt[1] ), Point( pt[0]+5,pt[1]+5), Scalar( 0, 0, 255 ), -1, 8 );
-		ret=getDist(pt[0],pt[1]);
+		ret=mp(pt[0],pt[1]);
 		std::cout<<"interior point is "<<ret.first<<" inches away to deg"<<ret.second<<std::endl;
 	}
 	return ret;
