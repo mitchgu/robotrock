@@ -24,8 +24,9 @@ const float PARALLEL_ANGLE_P = .35;
 const float PARALLEL_ROTATE_P = .45;
 const float FORWARD_SCALE_FACTOR = 1.3;
 const int PIC_DURATION=200;
-const double stopChaseBall=5;
+const double stopChaseBall=1;
 const int HOMING_TIME=120*1000;
+const int STOP_TIME=172*1000;
 
 class Roomba {
 	IR* irlf;
@@ -44,7 +45,7 @@ class Roomba {
 	Mat in,test,frame;
 	std::vector<int> inds; 
 	double cubeDist, cubeAngle;
-	int lostCount,cubeType, checkCount;
+	int lostCount,cubeType, checkCount, gCubes,rCubes;
 	float toWall, base_gyro;
 	VideoWriter* outVid,*recVid;
 	struct timeval tv,ts,stktv;
@@ -160,6 +161,7 @@ class Roomba {
 	}
 	public:
 	Roomba(Motor* _l, Motor* _r, IR* _irf, IR* _irr, IR* _irlf, IR* _irlb, mraa::Gpio* _uirb, Location* _start, Logger _logger, bool _greenSide) {
+		gCubes=rCubes=0;
 		left = _l;
 		right = _r;
 		irlf = _irlf;
@@ -201,8 +203,8 @@ class Roomba {
 		doorr = new Servo(12);
 		flip = new Servo(3);
 
-		doorl->write(-1.0);
-		doorr->write(-1.1);
+		doorl->write(-0.9);
+		doorr->write(-1.0);
 
 		lostCount=0,cubeType=-1,checkCount=PIC_DURATION;
 
@@ -237,6 +239,8 @@ class Roomba {
 	{
 		int slp=100000;
 		std::cout<<"Picking up type"<<cubeType<<std::endl;
+		if(cubeType==1) gCubes++;
+		else rCubes++;
 		stop();
 
 		base->forward(); base->setSpeed(2);
@@ -322,7 +326,8 @@ class Roomba {
 			if(ret[j].type==4)
 			{
 				std::cout<<"I SEEE PURPELEPL!"<<std::endl;
-				homeDetected=true;
+				if(greenSide&&rCubes>=2) homeDetected=true;
+				if((!greenSide)&&gCubes>=2) homeDetected=true;
 			}
 			else if(ret[j].type!=0&&ret[j].dist<cubeDist)
 			{
@@ -372,6 +377,7 @@ class Roomba {
 		switch (state) {
 			// State 0: Go forward ///////////////////////////////////////////////////
 			case APPROACH:
+				if(dt>STOP_TIME)  return FINISH;
 				if(checkStuck()) return transition(TROUBLE);
 				setMotor("left", FORWARD_SPEED);
 				setMotor("right", FORWARD_SPEED);
@@ -388,6 +394,7 @@ class Roomba {
 				else return APPROACH;
 				// State 1: Rotate in place CW //////////////////////////////////////////
 			case ALIGN: 
+				if(dt>STOP_TIME)  return FINISH;
 				if(checkStuck()) return TROUBLE;
 				setMotor("left", ROTATE_SPEED);
 				setMotor("right", -ROTATE_SPEED);
@@ -422,6 +429,7 @@ class Roomba {
 				}
 				// State 2: Drive parallel to wall //////////////////////////////////////
 			case PARALLEL: 
+				if(dt>STOP_TIME)  return FINISH;
 				if(checkStuck()) return transition(TROUBLE);
 				parallel_dist = 0.5 * lfdist + 0.5 * lbdist;
 				parallel_angle = lfdist - lbdist;
@@ -447,7 +455,7 @@ class Roomba {
 				gettimeofday(&stktv, NULL); 
 				ms = (unsigned long long)(stktv.tv_sec)*1000 + (unsigned long long)(stktv.tv_usec) / 1000;
 				std::cout<<"sampling last"<<ms-lastSampled<<std::endl;
-				if(!bassDropped&&(ms-lastSampled)>3*1000)
+				if(!bassDropped&&(ms-lastSampled)>4*1000)
 				{
 					lastSampled=ms;
 					motion->rotate(0.6);
@@ -496,11 +504,12 @@ class Roomba {
 				}
 				//chase cube
 			case CHASE:
+				if(dt>STOP_TIME)  return FINISH;
 				if(checkStuck()) return transition(TROUBLE);
 				//channel = wf->run_follower(channel);
 				homeDetected=false;
 				stop(); usleep(100000);
-				sensed=senseBall(6);
+				sensed=senseBall(7);
 				if(homeDetected&&(dt>HOMING_TIME)) return HOMING;
 				if(cubein) 
 				{
@@ -536,7 +545,7 @@ class Roomba {
 					while(!motion->run()); 
 					stop(); usleep(10000);
 				}
-				if(cubeDist<=22) 
+				if(cubeDist<30) 
 				{
 					goForward(25,0.75); stop();
 					return transition(PICKUP);
@@ -547,6 +556,7 @@ class Roomba {
 					return transition(CHASE);
 				}
 			case PICKUP:
+				if(dt>STOP_TIME)  return FINISH;
 				if(checkStuck()) return transition(TROUBLE);
 				if(!cubein) return transition(APPROACH);
 				if(cubeType==-1)
@@ -560,6 +570,7 @@ class Roomba {
 				goForward(-10);
 				return transition(CHASE);
 			case HOMING:
+				if(dt>STOP_TIME)  return FINISH;
 				stop(); sleep(1);
 				REP(k,6)
 				{
@@ -599,7 +610,7 @@ class Roomba {
 					  while(!motion->run()) usleep(1000);
 					  return HOMING;
 					  }*/
-					if(ret.first<23)
+					if(ret.first<30)
 					{
 						motion->straight(ret.first,false);
 						motion->setMConstants(3,0.1,0.15);
@@ -625,6 +636,7 @@ class Roomba {
 				return HOMING;
 
 			case STOP:
+				if(dt>STOP_TIME)  return FINISH;
 				std::cout<<"IN STOP WTF IS HAPPENNIG"<<std::endl;
 				motion->rotate(3.14);
 				while(!motion->run()) usleep(1000);
@@ -646,6 +658,7 @@ class Roomba {
 				dropTime=timeDiff();
 				return transition(APPROACH);
 			case TROUBLE:
+				if(dt>STOP_TIME)  return FINISH;
 				if(fdist==20) return transition(APPROACH);
 				else
 				{
@@ -666,18 +679,11 @@ class Roomba {
 			case FINISH:
 				while(!motion->run()) usleep(1000);
 				stop(); usleep(1000);
-				if(greenSide)
-				{
-					doorr->write(-0.2);
-					goForward(6);
-					doorr->write(-1.1);
-				}
-				else
-				{
-					doorl->write(-0.2);
-					goForward(6);
-					doorl->write(-1);
-				}
+				doorr->write(-0.2);
+				doorl->write(-0.2);
+				goForward(6);
+				doorr->write(-1.0);
+				doorl->write(-0.9);
 				sleep(1);
 				bassDropped=true;
 				dropTime=timeDiff();
